@@ -437,9 +437,10 @@
   function onText(P, ev) {
     const key = `say:${P.turnN}:${ev.block}`;
     const prev = P.rows.get(key);
-    const text = (((prev && prev.dataset.full) || '') + ev.text).replace(TAGS, '').trim();
-    const row = addRow(P, 'say', text.replace(/\s+/g, ' ').slice(0, 220), '', key);
-    row.dataset.full = text.slice(0, 600);
+    // keep the raw stream (chunk edges carry meaningful spaces); tidy only what is displayed
+    const raw = ((prev && prev.dataset.raw) || '') + ev.text;
+    const row = addRow(P, 'say', raw.replace(TAGS, '').replace(/\s+/g, ' ').trim().slice(0, 220), '', key);
+    row.dataset.raw = raw.slice(0, 800);
   }
 
   function onTool(P, ev) {

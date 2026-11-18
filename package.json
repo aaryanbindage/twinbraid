@@ -1,19 +1,57 @@
-﻿{
+{
   "name": "duet",
-  "version": "0.1.0",
-  "description": "Two coding agents (Claude Code + Codex) collaborating live in one workspace, with a desktop app to watch, interrupt and broadcast.",
+  "version": "0.2.0",
+  "description": "Pair any two coding agents (Claude Code, Codex, local models, Gemini CLI, Aider...) in one workspace, with a desktop app to watch, interrupt and broadcast.",
   "main": "src/main/main.js",
+  "author": "Aaryan Bindage",
   "license": "MIT",
+  "homepage": "https://github.com/aaryanbindage/duet",
+  "repository": { "type": "git", "url": "git+https://github.com/aaryanbindage/duet.git" },
   "scripts": {
     "start": "electron .",
     "demo": "electron . --demo",
+    "demo:sim": "electron . --demo --sim",
     "cli": "node src/cli.js",
-    "test": "node --test \"test/*.test.js\""
+    "test": "node --test \"test/*.test.js\"",
+    "icon": "electron scripts/make-icon.js",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "pack": "electron-builder --dir"
   },
   "devDependencies": {
-    "electron": "^45.3.4"
+    "@openai/codex": "^0.170.0",
+    "electron": "^45.3.4",
+    "electron-builder": "^26.18.0"
   },
-  "dependencies": {
-    "@openai/codex": "^0.170.0"
+  "build": {
+    "appId": "com.aaryanbindage.duet",
+    "productName": "Duet",
+    "copyright": "Copyright (c) 2026 Aaryan Bindage",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["src/**/*", "package.json", "LICENSE"],
+    "icon": "build/icon.png",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ],
+      "identity": null,
+      "hardenedRuntime": false,
+      "artifactName": "Duet-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": { "title": "Duet ${version}" },
+    "win": {
+      "artifactName": "Duet-${version}-win-portable.${ext}",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "zip", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Duet-Setup-${version}.${ext}"
+    }
   }
 }

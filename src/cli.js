@@ -15,9 +15,13 @@ const flag = (n) => argv.includes(`--${n}`);
 const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 && argv[i + 1] ? argv[i + 1] : d; };
 
 if (flag('help') || (!opt('task') && !flag('demo'))) {
-  console.log(`Usage: duet-cli --task "<what to build>" [--cwd DIR] [--lead claude|codex|none]
-                [--perm workspace|careful|full] [--max N] [--claude-model M] [--codex-model M]
-                [--thinking] [--demo]`);
+  console.log(`Usage: duet-cli --task "<what to build>" [--cwd DIR] [--a KIND[:MODEL]] [--b KIND[:MODEL]]
+                [--lead a|b|none] [--perm workspace|careful|full] [--max N] [--url BASE_URL]
+                [--thinking] [--demo]
+
+  Agent kinds: claude, codex, ollama, lmstudio, llamacpp, openai, openrouter, openai-compat,
+               gemini, aider, opencode, codex-sim, local-sim
+  Example:     node src/cli.js --a claude --b ollama:qwen2.5-coder --task "add a /health endpoint"`);
   process.exit(flag('help') ? 0 : 1);
 }
 
@@ -28,16 +32,23 @@ const clip = (s, n = 110) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 const demo = flag('demo');
 const cwd = demo ? require('node:fs').mkdtempSync(path.join(require('node:os').tmpdir(), 'duet-demo-')) : path.resolve(opt('cwd', '.'));
 const task = opt('task', 'Build a small markdown-to-HTML converter with tests.');
+// --a / --b take  kind[:model]  e.g. claude, codex, ollama:qwen2.5-coder, lmstudio, gemini, codex-sim
+const agentSpec = (v) => {
+  const i = v.indexOf(':');
+  const kind = i < 0 ? v : v.slice(0, i);
+  const model = i < 0 ? '' : v.slice(i + 1);
+  const spec = { kind };
+  if (model) spec.model = model;
+  if (opt('url') && !['claude', 'codex'].includes(kind)) spec.baseUrl = opt('url');
+  return spec;
+};
 const room = buildRoom({
   cwd,
   demo,
-  lead: opt('lead', 'claude'),
+  lead: opt('lead', 'a'),
   permission: opt('perm', 'workspace'),
   maxExchanges: Number(opt('max', 14)),
-  agents: [
-    { id: 'claude', kind: 'claude', model: opt('claude-model', '') },
-    { id: 'codex', kind: 'codex', model: opt('codex-model', '') },
-  ],
+  agents: [agentSpec(opt('a', 'claude')), agentSpec(opt('b', 'codex'))],
 });
 
 let exitCode = 0;

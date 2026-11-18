@@ -95,7 +95,7 @@ class CodexAgent extends Agent {
           this.toolStart(id, 'edit', { file_path: files[0] });
         } else {
           if (!this._tools.has(id)) this.toolStart(id, 'edit', { file_path: files[0] });
-          this.toolEnd(id, item.status !== 'failed', { files, file: files[0] || null, summary: files.join(', ') });
+          this.toolEnd(id, item.status !== 'failed', { files, file: files[0] || null, rel: this.rel(files[0] || null), summary: files.map((f) => this.rel(f)).join(', ') });
         }
         break;
       }

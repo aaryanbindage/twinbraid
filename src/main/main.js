@@ -158,7 +158,7 @@ ipcMain.handle('start', (_e, cfg) => {
     room = buildRoom({ ...cfg, speed: demo ? 1 : undefined });
     attach(room);
     const s = readSettings();
-    if (!demo) s.recent = [cfg.cwd, ...(s.recent || []).filter((p) => p !== cfg.cwd)].slice(0, 6);
+    if (!sandbox) s.recent =[cfg.cwd, ...(s.recent || []).filter((p) => p !== cfg.cwd)].slice(0, 6);
     writeSettings(s);
     room.start(cfg.task.trim());
     return { ok: true, cwd: cfg.cwd };
