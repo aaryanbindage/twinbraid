@@ -19,7 +19,7 @@
   <main id="setup" class="view">
     <div class="setup-card">
       <h1>Two agents. One workspace.</h1>
-      <p class="lede">Claude Code and Codex share your project folder and message each other directly, so work is handed off, never rewritten. Watch both think, interrupt either, or broadcast to both.</p>
+      <p class="lede">Pair any two coding agents (Claude Code, Codex, a local model through Ollama or LM Studio, Gemini CLI, Aider, any OpenAI-compatible API). They share your project folder and message each other directly, so work is handed off, never rewritten. Watch both think, interrupt either, or broadcast to both.</p>
 
       <div class="doctor" id="doctor"></div>
 
@@ -34,20 +34,23 @@
         <textarea id="task" rows="4" placeholder="Describe what you want built. Both agents see this, and the lead splits the work."></textarea>
       </label>
 
+      <div class="field"><span>Pick any two agents</span></div>
+      <div class="agents-grid" id="agentsGrid"></div>
+
       <div class="grid2">
         <div class="field">
           <span>Who leads</span>
           <div class="seg" id="lead">
-            <button data-v="claude" class="on">Claude leads</button>
-            <button data-v="codex">Codex leads</button>
+            <button data-v="a" class="on">Agent A leads</button>
+            <button data-v="b">Agent B leads</button>
             <button data-v="none">Equal peers</button>
           </div>
         </div>
         <div class="field">
           <span>Permissions</span>
           <div class="seg" id="perm">
-            <button data-v="workspace" class="on" title="Edits and shell allowed inside the project (Codex sandboxed to the workspace)">Workspace</button>
-            <button data-v="careful" title="Claude edits files but cannot run shell; Codex is read-only">Careful</button>
+            <button data-v="workspace" class="on" title="Edits and shell allowed inside the project (Codex sandboxed; local models cannot write outside it)">Workspace</button>
+            <button data-v="careful" title="Read-only for Codex and local models; Claude edits files but cannot run shell">Careful</button>
             <button data-v="full" class="danger" title="No sandbox, no prompts. Only for throwaway folders.">Full auto</button>
           </div>
         </div>
@@ -56,8 +59,6 @@
       <details class="adv">
         <summary>Advanced</summary>
         <div class="grid3">
-          <label class="field"><span>Claude model</span><input id="mClaude" placeholder="default (e.g. sonnet, opus)"></label>
-          <label class="field"><span>Codex model</span><input id="mCodex" placeholder="default"></label>
           <label class="field"><span>Pause after N agent-to-agent messages</span><input id="maxEx" type="number" min="2" max="100" value="14"></label>
         </div>
       </details>

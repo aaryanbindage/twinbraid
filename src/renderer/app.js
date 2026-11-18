@@ -19,6 +19,8 @@
     claude: svg('<path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/>'),
     codex: svg('<path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>'),
     other: svg('<circle cx="12" cy="12" r="3"/>'),
+    chip: svg('<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>'),
+    star: svg('<path d="M12 3l2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6z"/>'),
     write: svg('<path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>'),
     shell: svg('<path d="M4 17l6-6-6-6M12 19h8"/>'),
     read: svg('<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9zM14 3v6h6"/>'),
@@ -32,6 +34,16 @@
   };
 
   const TAGS = /\[\[\s*(?:done|wait|silent|ask[-_ ]?user)\s*\]\]/gi;
+
+  const iconFor = (a) => {
+    if (a.kind === 'mock') return ICON[a.id] || ICON.other;
+    if (ICON[a.kind]) return ICON[a.kind];
+    if (a.kind === 'codex-sim') return ICON.codex;
+    if (['ollama', 'lmstudio', 'llamacpp', 'local-sim'].includes(a.kind)) return ICON.chip;
+    if (['openai', 'openrouter', 'openai-compat', 'gemini'].includes(a.kind)) return ICON.star;
+    return ICON.shell;
+  };
+  const colorOf = (id) => (id === 'user' ? 'var(--you)' : S.panels[id] ? S.panels[id].color : 'var(--faint)');
 
   // ---- formatting ----------------------------------------------------------
   const fmtNum = (n) => (n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : n.toLocaleString('en-US'));
@@ -56,10 +68,94 @@
   // ============================== SETUP =====================================
   const pick = (segId, val) => {
     const seg = $(segId);
+    if (![...seg.querySelectorAll('button')].some((b) => b.dataset.v === val)) return; // stale saved value
     seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === val));
   };
   const segVal = (segId) => $(`${segId} button.on`).dataset.v;
   const saved = (() => { try { return JSON.parse(localStorage.getItem('duet.setup') || '{}'); } catch { return {}; } })();
+
+  const GROUPS = [
+    ['Coding agents', ['claude', 'codex']],
+    ['Local models', ['ollama', 'lmstudio', 'llamacpp']],
+    ['Cloud APIs', ['openai', 'openrouter', 'openai-compat']],
+    ['Other CLIs', ['gemini', 'aider', 'opencode', 'cli']],
+    ['Simulators (no login needed)', ['codex-sim', 'local-sim']],
+  ];
+  const FIELD = {
+    model: ['Model', ''],
+    baseUrl: ['Server URL', ''],
+    apiKey: ['API key (optional, never saved)', 'password'],
+    command: ['Command', ''],
+    args: ['Arguments', ''],
+  };
+  const LOCAL_SERVERS = { ollama: 'ollama', lmstudio: 'lmstudio', llamacpp: 'llamacpp' };
+
+  function buildCard(i, sv) {
+    const sel = el('select', { class: 'sel' }, ...GROUPS.map(([g, ks]) =>
+      el('optgroup', { label: g }, ...ks.filter((k) => S.kinds[k]).map((k) => el('option', { value: k }, S.kinds[k].label)))));
+    sel.value = S.kinds[sv.kind] ? sv.kind : (i ? 'codex' : 'claude');
+    const inputs = {};
+    const rows = Object.entries(FIELD).map(([f, [label, type]]) => {
+      const input = el('input', { type: type || 'text', spellcheck: 'false', autocomplete: 'off' });
+      if (sv[f] && f !== 'apiKey') input.value = sv[f];
+      inputs[f] = input;
+      return { f, node: el('label', { class: 'field mini' }, el('span', {}, label), input) };
+    });
+    const dl = el('datalist', { id: `models${i}` });
+    inputs.model.setAttribute('list', `models${i}`);
+    const hint = el('div', { class: 'card-hint' });
+    const status = el('div', { class: 'card-status' });
+    const card = { i, sel, inputs, rows, dl, hint, status };
+    const refresh = () => {
+      const k = S.kinds[sel.value];
+      for (const r of rows) r.node.classList.toggle('hidden', !k.fields.includes(r.f));
+      inputs.baseUrl.placeholder = k.baseUrl || '';
+      inputs.model.placeholder = LOCAL_SERVERS[sel.value] ? 'pick or type a model' : sel.value === 'claude' ? 'default (e.g. sonnet, opus)' : sel.value === 'codex' ? 'default' : '';
+      inputs.command.placeholder = 'e.g. mytool';
+      inputs.args.placeholder = 'e.g. --yes --prompt-from-stdin';
+      hint.textContent = k.hint || '';
+      dl.replaceChildren(...((S.doctor && S.doctor[LOCAL_SERVERS[sel.value]] && S.doctor[LOCAL_SERVERS[sel.value]].models) || []).map((m) => el('option', { value: m })));
+      status.replaceChildren(...cardStatus(sel.value));
+      updateLeadLabels();
+    };
+    card.refresh = refresh;
+    sel.addEventListener('change', refresh);
+    const slotName = i === 0 ? 'Agent A' : 'Agent B';
+    card.node = el('div', { class: 'agent-card' }, el('div', { class: 'card-h' }, slotName), sel, ...rows.map((r) => r.node), dl, hint, status);
+    return card;
+  }
+
+  function cardStatus(kind) {
+    const d = S.doctor;
+    if (!d) return [];
+    const mk = (cls, t) => chip(cls, t);
+    if (kind === 'claude') return [d.claude.found ? mk('ok', `installed ${(d.claude.version || '').replace(/\s*\(Claude Code\)/, '')}`) : mk('bad', 'not found: install Claude Code')];
+    if (kind === 'codex') {
+      if (!d.codex.found) return [mk('bad', 'not found: npm i -g @openai/codex')];
+      return [d.codex.loggedIn ? mk('ok', 'signed in') : mk('warn', 'not signed in: run codex login')];
+    }
+    if (LOCAL_SERVERS[kind]) {
+      const s = d[LOCAL_SERVERS[kind]] || {};
+      if (!s.up) return [mk('warn', `${S.kinds[kind].label} server not reachable`)];
+      return [mk('ok', s.models && s.models.length ? `running · ${s.models.length} model${s.models.length > 1 ? 's' : ''}` : 'running')];
+    }
+    if (['gemini', 'aider', 'opencode'].includes(kind)) return [d.bins && d.bins[kind] ? mk('ok', 'installed') : mk('bad', `\`${kind}\` not found on PATH`)];
+    return [];
+  }
+
+  function updateLeadLabels() {
+    if (!S.cards) return;
+    const [a, b] = S.cards.map((c) => S.kinds[c.sel.value].label);
+    const btns = $('#lead').querySelectorAll('button');
+    btns[0].textContent = `${a} leads`;
+    btns[1].textContent = `${b} leads`;
+  }
+
+  function cardValue(c) {
+    const v = { kind: c.sel.value };
+    for (const f of S.kinds[v.kind].fields) { const x = c.inputs[f].value.trim(); if (x) v[f] = x; }
+    return v;
+  }
 
   function initSetup() {
     for (const id of ['#lead', '#perm']) {
@@ -68,8 +164,6 @@
     if (saved.lead) pick('#lead', saved.lead);
     if (saved.perm) pick('#perm', saved.perm);
     if (saved.cwd) $('#cwd').value = saved.cwd;
-    $('#mClaude').value = saved.mClaude || '';
-    $('#mCodex').value = saved.mCodex || '';
     $('#browse').onclick = async () => { const p = await api.invoke('pick-folder'); if (p) $('#cwd').value = p; };
     $('#startBtn').onclick = () => start(false);
     $('#demoBtn').onclick = () => start(true);
@@ -78,19 +172,52 @@
       const box = $('#recent');
       box.replaceChildren(...(s.recent || []).map((p) => el('button', { title: p, onclick: () => { $('#cwd').value = p; } }, p)));
     });
-    api.invoke('doctor').then((d) => {
-      const chips = [];
-      chips.push(d.claude.found ? chip('ok', `Claude Code ${(d.claude.version || '').replace(/\s*\(Claude Code\)/, '')}`) : chip('bad', 'Claude Code not found'));
-      if (!d.codex.found) chips.push(chip('bad', 'Codex CLI not found'));
-      else chips.push(d.codex.loggedIn ? chip('ok', `Codex ${d.codex.version || ''}`) : chip('warn', 'Codex not signed in — run: codex login'));
+
+    api.invoke('kinds').then((kinds) => {
+      S.kinds = kinds;
+      S.cards = [0, 1].map((i) => buildCard(i, (saved.agents || [])[i] || {}));
+      $('#agentsGrid').replaceChildren(...S.cards.map((c) => c.node));
+      S.cards.forEach((c) => c.refresh());
+      return api.invoke('doctor');
+    }).then((d) => {
       S.doctor = d;
+      const chips = [];
+      chips.push(d.claude.found ? chip('ok', 'Claude Code') : chip('', 'Claude Code: not installed'));
+      chips.push(d.codex.found ? (d.codex.loggedIn ? chip('ok', 'Codex') : chip('warn', 'Codex: not signed in')) : chip('', 'Codex: not installed'));
+      chips.push(d.ollama.up ? chip('ok', `Ollama · ${d.ollama.models.length} models`) : chip('', 'Ollama: not running'));
+      if (d.lmstudio.up) chips.push(chip('ok', 'LM Studio'));
       $('#doctor').replaceChildren(...chips);
+      S.cards.forEach((c) => c.refresh());
     });
   }
   const chip = (cls, text) => el('span', { class: `chip ${cls}` }, el('i'), text);
 
+  /** Returns an error string, or null when the pair can start. Also fills sensible defaults. */
+  function validate(agents) {
+    const d = S.doctor;
+    if (!d) return null;
+    for (const a of agents) {
+      const label = S.kinds[a.kind].label;
+      if (a.kind === 'claude' && !d.claude.found) return 'Claude Code CLI not found on PATH.';
+      if (a.kind === 'codex' && !d.codex.found) return 'Codex CLI not found. Install it with: npm i -g @openai/codex';
+      if (a.kind === 'codex' && !d.codex.loggedIn) return 'Codex is not signed in. Run `codex login` in a terminal, then try again.';
+      const srv = LOCAL_SERVERS[a.kind] && d[LOCAL_SERVERS[a.kind]];
+      if (srv) {
+        if (!srv.up) return `${label} is not running at its default address. Start it, or set the Server URL.`;
+        if (!a.model && srv.models && srv.models.length) a.model = srv.models[0];
+        if (!a.model && a.kind === 'ollama') return 'Ollama has no models installed. Run: ollama pull qwen2.5-coder';
+      }
+      if (['llamacpp', 'openai-compat'].includes(a.kind) && !a.model) a.model = 'default';
+      if (['openai', 'openrouter'].includes(a.kind) && !a.model) return `${label}: enter a model name.`;
+      if (['gemini', 'aider', 'opencode'].includes(a.kind) && !(d.bins && d.bins[a.kind])) return `\`${a.kind}\` not found on PATH.`;
+      if (a.kind === 'cli' && !a.command) return 'Custom CLI: enter the command to run.';
+    }
+    return null;
+  }
+
   async function start(demo) {
     $('#setupErr').textContent = '';
+    const agents = S.cards.map(cardValue);
     const cfg = {
       demo,
       cwd: $('#cwd').value.trim(),
@@ -98,19 +225,20 @@
       lead: segVal('#lead'),
       permission: segVal('#perm'),
       maxExchanges: Number($('#maxEx').value) || 14,
-      agents: [
-        { id: 'claude', kind: 'claude', model: $('#mClaude').value.trim() },
-        { id: 'codex', kind: 'codex', model: $('#mCodex').value.trim() },
-      ],
+      agents,
     };
-    if (demo) { cfg.cwd = ''; cfg.task = cfg.task.trim() || 'Build a small markdown-to-HTML converter with tests.'; cfg.lead = 'claude'; }
+    if (demo) { cfg.cwd = ''; cfg.task = cfg.task.trim() || 'Build a small markdown-to-HTML converter with tests.'; cfg.lead = 'a'; }
     else {
-      const d = S.doctor;
-      if (d && !d.claude.found) return fail('Claude Code CLI not found on PATH.');
-      if (d && !d.codex.found) return fail('Codex CLI not found. Install it with: npm i -g @openai/codex');
-      if (d && !d.codex.loggedIn) return fail('Codex is not signed in. Run `codex login` in a terminal, then try again.');
+      const err = validate(agents);
+      if (err) return fail(err);
     }
-    try { localStorage.setItem('duet.setup', JSON.stringify({ cwd: cfg.cwd, lead: cfg.lead, perm: cfg.permission, mClaude: cfg.agents[0].model, mCodex: cfg.agents[1].model })); } catch { /* ignore */ }
+    // API keys are passed through for this run only and never written to disk
+    const keys = S.cards.map((c) => (c.inputs.apiKey.value || '').trim());
+    agents.forEach((a, i) => { if (keys[i]) a.apiKey = keys[i]; });
+    try {
+      const keep = S.cards.map(cardValue);
+      localStorage.setItem('duet.setup', JSON.stringify({ cwd: cfg.cwd, lead: cfg.lead, perm: cfg.permission, agents: keep }));
+    } catch { /* ignore */ }
     const r = await api.invoke('start', cfg);
     if (!r.ok) fail(r.error);
   }
@@ -142,8 +270,8 @@
 
     const seg = $('#target');
     seg.replaceChildren(
-      el('button', { type: 'button', 'data-v': 'both', 'data-c': 'both', class: 'on' }, 'Both'),
-      ...session.agents.map((a) => el('button', { type: 'button', 'data-v': a.id, 'data-c': a.id }, a.label)));
+      el('button', { type: 'button', 'data-v': 'both', style: '--c:var(--you)', class: 'on' }, 'Both'),
+      ...session.agents.map((a) => el('button', { type: 'button', 'data-v': a.id, style: `--c:${a.color}` }, a.label)));
     S.target = 'both';
     seg.onclick = (e) => { if (e.target.dataset.v) setTarget(e.target.dataset.v); };
 
@@ -176,7 +304,7 @@
   }
 
   function buildPanel(a, slot) {
-    const P = { id: a.id, label: a.label, slot, rows: new Map(), thinkNode: document.createTextNode(''), turnStart: 0, gotThinkText: false, thinkTokens: 0, dirty: false };
+    const P = { id: a.id, label: a.label, color: a.color || 'var(--faint)', slot, rows: new Map(), thinkNode: document.createTextNode(''), turnStart: 0, gotThinkText: false, thinkTokens: 0, dirty: false };
     const stat = (k) => {
       const v = el('div', { class: 'v' }, '0');
       const s = el('div', { class: 's' }, ' ');
@@ -198,7 +326,7 @@
     P.btnMsg = el('button', { class: 'btn sm', onclick: () => setTarget(a.id) }, `Message ${a.label}`);
 
     const header = el('div', { class: 'ph' },
-      el('div', { class: 'avatar', html: ICON[a.kind === 'mock' ? a.id : a.kind] || ICON.other }),
+      el('div', { class: 'avatar', html: iconFor(a) }),
       el('div', {}, el('div', { class: 'pname' }, a.label), P.modelEl = el('div', { class: 'pmodel' }, a.model || a.kind)),
       P.state);
     P.nodes = [
@@ -213,7 +341,11 @@
   }
 
   const paneOf = (P) => $(P.slot === 0 ? '#paneL' : '#paneR');
-  function setPane(P, attrs) { const pane = paneOf(P); for (const [k, v] of Object.entries(attrs)) pane.dataset[k] = v; }
+  function setPane(P, attrs) {
+    const pane = paneOf(P);
+    pane.style.setProperty('--c', P.color);
+    for (const [k, v] of Object.entries(attrs)) pane.dataset[k] = v;
+  }
 
   // ---- event handling ------------------------------------------------------
   const ACTIVE = new Set(['thinking', 'editing', 'working', 'writing']);
@@ -401,8 +533,8 @@
       if (ev.kind === 'ask') tags.push(el('span', { class: 'tag warn' }, 'needs you'));
       if (ev.kind === 'done') tags.push(el('span', { class: 'tag ok' }, 'done'));
       if (ev.interrupt) tags.push(el('span', { class: 'tag warn' }, '⚡ interrupt'));
-      node = el('div', { class: 'msg', 'data-from': ev.from, 'data-kind': ev.kind || '' },
-        el('div', { class: 'meta' }, el('span', { class: 'who' }, nameOf(ev.from)), el('span', { class: 'arrow' }, '→'), el('span', { class: 'who', style: `--wc:var(--${ev.to === 'user' ? 'you' : ev.to === 'claude' || ev.to === 'codex' ? ev.to : 'faint'})` }, nameOf(ev.to)), ...tags, el('span', { class: 'time' }, clock(ev.ts))),
+      node = el('div', { class: 'msg', 'data-from': ev.from === 'user' ? 'user' : 'agent', 'data-kind': ev.kind || '', style: `--wc:${colorOf(ev.from)}` },
+        el('div', { class: 'meta' }, el('span', { class: 'who' }, nameOf(ev.from)), el('span', { class: 'arrow' }, '→'), el('span', { class: 'who', style: `--wc:${ev.to === 'both' ? 'var(--faint)' : colorOf(ev.to)}` }, nameOf(ev.to)), ...tags, el('span', { class: 'time' }, clock(ev.ts))),
         el('div', { class: 'bubble', html: md(ev.text) }));
     }
     chat.append(node);
@@ -440,7 +572,16 @@
     for (const n of dirty) n.scrollTop = n.scrollHeight;
     dirty.clear();
   });
-  api.onAutoDemo(() => start(true));
+  api.onAutoDemo(async (opts) => {
+    if (!opts.sim) return start(true);
+    // dev: a mixed pair of simulated agents running through the real Codex and local-model adapters
+    const r = await api.invoke('start', {
+      cwd: '', task: 'Build a small markdown-to-HTML converter with tests.', lead: 'a', permission: 'workspace', maxExchanges: 14,
+      agents: [{ kind: 'codex-sim' }, { kind: 'local-sim' }],
+    });
+    if (!r.ok) fail(r.error);
+  });
+  document.body.dataset.platform = api.platform;
   initSetup();
   api.invoke('history').then((h) => { if (h && h.length) { h.forEach(handle); for (const P of Object.values(S.panels)) P.think.scrollTop = P.think.scrollHeight; } });
 })();

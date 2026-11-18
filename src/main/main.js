@@ -1,11 +1,15 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, dialog, Notification, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Notification, shell, Menu } = require('electron');
 const { execFile } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { buildRoom } = require('../core/factory');
-const { resolveClaude, resolveCodex, childEnv } = require('../core/proc');
+const { KINDS } = require('../core/registry');
+const { resolveClaude, resolveCodex, resolveBin, childEnv, fixPath, isMac } = require('../core/proc');
+
+// Finder/Dock launches get a minimal PATH; adopt the login shell's so `claude`, `codex`, `ollama` resolve
+fixPath();
 
 const DATA = path.join(os.homedir(), '.duet');
 const SETTINGS = path.join(DATA, 'settings.json');
@@ -34,8 +38,10 @@ function createWindow() {
     minHeight: 640,
     backgroundColor: '#1a1917',
     title: 'Duet',
-    titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#1a1917', symbolColor: '#d9d3c7', height: 44 },
+    // macOS keeps its traffic lights inset; Windows gets a themed caption-button overlay
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 14 } }
+      : { titleBarStyle: 'hidden', titleBarOverlay: { color: '#1a1917', symbolColor: '#d9d3c7', height: 44 } }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -96,19 +102,42 @@ const run = (cmd, args, timeout = 9000) =>
       resolve({ ok: !err, out: `${stdout || ''}${stderr || ''}`.trim() }));
   });
 
+/** Probe a local model server: { up, models[] } */
+async function probe(url, pick) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(1500) });
+    if (!res.ok) return { up: false, models: [] };
+    return { up: true, models: pick(await res.json()) };
+  } catch {
+    return { up: false, models: [] };
+  }
+}
+
+ipcMain.handle('kinds', () => KINDS);
+
 ipcMain.handle('doctor', async () => {
-  const out = { claude: { found: false }, codex: { found: false } };
-  const c = resolveClaude();
-  if (c) {
+  const out = { claude: { found: false }, codex: { found: false }, bins: {} };
+  const claude = async () => {
+    const c = resolveClaude();
+    if (!c) return;
     const r = await run(c.command, [...c.prefix, '--version']);
     out.claude = { found: r.ok, version: r.out.split('\n')[0] };
-  }
-  const x = resolveCodex();
-  if (x) {
-    const v = await run(x.command, [...x.prefix, '--version']);
-    const l = await run(x.command, [...x.prefix, 'login', 'status']);
+  };
+  const codex = async () => {
+    const x = resolveCodex();
+    if (!x) return;
+    const [v, l] = await Promise.all([run(x.command, [...x.prefix, '--version']), run(x.command, [...x.prefix, 'login', 'status'])]);
     out.codex = { found: v.ok, version: v.out.split('\n')[0], loggedIn: l.ok, detail: l.out.split('\n')[0] };
-  }
+  };
+  const openaiModels = (j) => (j.data || []).map((m) => m.id);
+  await Promise.all([
+    claude(),
+    codex(),
+    probe('http://localhost:11434/api/tags', (j) => (j.models || []).map((m) => m.name)).then((r) => { out.ollama = r; }),
+    probe('http://localhost:1234/v1/models', openaiModels).then((r) => { out.lmstudio = r; }),
+    probe('http://localhost:8080/v1/models', openaiModels).then((r) => { out.llamacpp = r; }),
+  ]);
+  for (const b of ['gemini', 'aider', 'opencode']) out.bins[b] = !!resolveBin(b);
   return out;
 });
 
@@ -122,7 +151,8 @@ ipcMain.handle('start', (_e, cfg) => {
   try {
     teardown();
     const demo = !!cfg.demo;
-    if (demo && !cfg.cwd) cfg.cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'duet-demo-'));
+    const sandbox = demo || (cfg.agents || []).every((a) => ['codex-sim', 'local-sim', 'mock'].includes(a.kind));
+    if (sandbox && !cfg.cwd) cfg.cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'duet-demo-'));
     if (!cfg.cwd || !fs.existsSync(cfg.cwd)) return { ok: false, error: 'Pick an existing project folder.' };
     if (!cfg.task || !cfg.task.trim()) return { ok: false, error: 'Describe the task first.' };
     room = buildRoom({ ...cfg, speed: demo ? 1 : undefined });
@@ -149,8 +179,15 @@ ipcMain.handle('open-folder', (_e, p) => shell.openPath(p));
 const argVal = (name) => (process.argv.find((a) => a.startsWith(`--${name}=`)) || '').split('=').slice(1).join('=');
 
 app.whenReady().then(() => {
+  // a real menu is required on macOS for Cmd+C / Cmd+V / Cmd+Q to work in text fields
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    ...(isMac ? [{ role: 'appMenu' }] : []),
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' },
+  ]));
   createWindow();
-  if (DEMO_FLAG) win.webContents.once('did-finish-load', () => win.webContents.send('auto-demo'));
+  if (DEMO_FLAG) win.webContents.once('did-finish-load', () => win.webContents.send('auto-demo', { sim: process.argv.includes('--sim') }));
   const shot = argVal('shot');
   if (shot) {
     win.webContents.once('did-finish-load', () => setTimeout(async () => {
@@ -161,4 +198,5 @@ app.whenReady().then(() => {
   }
 });
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) createWindow(); });
 app.on('window-all-closed', () => { teardown(); app.quit(); });

@@ -9,7 +9,8 @@
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font: 13.5px/1.5 var(--sans); overflow: hidden; }
-button, input, textarea { font: inherit; color: inherit; }
+button, input, textarea, select { font: inherit; color: inherit; }
+:root { color-scheme: dark; }
 .hidden { display: none !important; }
 #app { height: 100%; display: flex; flex-direction: column; }
 
@@ -43,9 +44,7 @@ input:focus, textarea:focus { border-color: var(--faint); }
 .seg button.on { background: var(--bg4); color: var(--text); }
 .seg button.danger.on { color: var(--bad); }
 .seg.small button { padding: 3px 10px; font-size: 12.5px; }
-.seg button[data-c="claude"].on { box-shadow: inset 0 -2px 0 var(--claude); }
-.seg button[data-c="codex"].on { box-shadow: inset 0 -2px 0 var(--codex); }
-.seg button[data-c="both"].on { box-shadow: inset 0 -2px 0 var(--you); }
+.seg.small button.on { box-shadow: inset 0 -2px 0 var(--c, var(--you)); }
 
 /* ---- setup ---- */
 .view { flex: 1; min-height: 0; }
@@ -69,6 +68,18 @@ input:focus, textarea:focus { border-color: var(--faint); }
 .chip.ok i { background: var(--ok); } .chip.bad i { background: var(--bad); } .chip.warn i { background: var(--warn); }
 .chip.bad, .chip.warn { color: var(--text); }
 
+/* agent pickers */
+.agents-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.agent-card { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px 10px; min-width: 0; }
+.card-h { color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .7px; margin-bottom: 6px; }
+.sel { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; outline: none; }
+.field.mini { margin-bottom: 8px; } .field.mini > span { font-size: 11px; margin-bottom: 3px; }
+.card-hint { color: var(--faint); font-size: 12px; margin: 2px 0 6px; }
+.card-status { display: flex; gap: 6px; flex-wrap: wrap; }
+.card-status .chip { font-size: 11.5px; padding: 2px 9px; }
+body[data-platform="darwin"] #top { padding: 0 16px 0 84px; }
+body[data-platform="darwin"] .brand { margin-left: 0; }
+
 /* ---- stage ---- */
 #stage { display: grid; grid-template-columns: minmax(330px, 1fr) minmax(360px, 1.15fr) minmax(330px, 1fr); gap: 0; }
 .pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--line); background: var(--bg); padding: 14px 14px 12px; gap: 12px; }
@@ -76,8 +87,7 @@ input:focus, textarea:focus { border-color: var(--faint); }
 .center { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--bg2); }
 
 .pane { --c: var(--faint); }
-.pane[data-id="claude"] { --c: var(--claude); } .pane[data-id="codex"] { --c: var(--codex); }
-.pane[data-slot="1"]:not([data-id="claude"]):not([data-id="codex"]) { --c: var(--you); }
+/* --c (the agent's accent colour) is set per pane from the session data */
 
 .ph { display: flex; align-items: center; gap: 12px; }
 .avatar { position: relative; width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 22%, var(--bg2)); color: var(--c); }
@@ -160,7 +170,6 @@ input:focus, textarea:focus { border-color: var(--faint); }
 .bubble p { margin: 0 0 6px; } .bubble p:last-child { margin: 0; }
 .bubble code { font-family: var(--mono); font-size: 12px; background: var(--bg); padding: 1px 5px; border-radius: 5px; }
 .bubble pre { margin: 6px 0; background: var(--bg); padding: 8px 10px; border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: 12px; }
-.msg[data-from="claude"] { --wc: var(--claude); } .msg[data-from="codex"] { --wc: var(--codex); } .msg[data-from="user"] { --wc: var(--you); }
 .msg[data-from="user"] { align-self: flex-end; align-items: flex-end; }
 .msg[data-from="user"] .bubble { border-left: 1px solid var(--line); border-right: 3px solid var(--you); border-radius: var(--radius) 4px var(--radius) var(--radius); background: color-mix(in srgb, var(--you) 9%, var(--bg3)); }
 .msg[data-from="user"] .meta { flex-direction: row-reverse; }
@@ -175,12 +184,13 @@ input:focus, textarea:focus { border-color: var(--faint); }
 .empty-chat { margin: auto; color: var(--faint); text-align: center; max-width: 34ch; }
 
 .composer { flex: none; border-top: 1px solid var(--line); padding: 10px 14px 12px; background: var(--bg2); }
-.composer-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.composer-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 8px; }
 .toggle { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--muted); font-size: 12.5px; user-select: none; }
 .toggle input { display: none; }
 .toggle span { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); }
 .toggle input:checked + span { background: color-mix(in srgb, var(--warn) 18%, var(--bg3)); border-color: var(--warn); color: var(--warn); }
-.hint { flex: 1; min-width: 0; margin-left: auto; color: var(--faint); font-size: 12px; text-align: right; }
+.hint { flex: 1 1 100%; order: 3; color: var(--faint); font-size: 12px; min-height: 0; }
+.hint:empty { display: none; }
 .composer-row { display: flex; gap: 8px; align-items: stretch; }
 .composer-row textarea { background: var(--bg); }
 .send { padding: 0 20px; }
