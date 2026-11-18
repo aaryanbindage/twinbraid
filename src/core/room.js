@@ -80,7 +80,7 @@ class Room extends EventEmitter {
       task,
       agents: this.ids.map((id) => {
         const a = this.slots.get(id).agent;
-        return { id, kind: a.kind, label: a.label, model: a.model, permission: a.permission };
+        return { id, kind: a.kind, label: a.label, model: a.model, permission: a.permission, color: a.color };
       }),
       files: n,
     });
@@ -190,12 +190,17 @@ class Room extends EventEmitter {
     this._emitInbox(slot);
     this._emitRoom('running');
 
+    // agents that emit no tool events (plain-text CLIs) are watched via the filesystem instead
+    // (only while the peer is idle: otherwise the peer's edits would be credited to this agent)
+    const peerBusy = () => [...this.slots.values()].some((s) => s !== slot && s.agent.running);
+    const poll = slot.agent.noToolEvents ? setInterval(() => { if (!peerBusy()) this._record(slot, this._safeSweep()); }, 2000) : null;
     let result;
     try {
       result = await slot.agent.runTurn(prompt);
     } catch (err) {
       result = { ok: false, error: err.message, text: '' };
     }
+    if (poll) { clearInterval(poll); this._record(slot, this._safeSweep()); }
     slot.activeMs += Date.now() - slot.turnStart;
     slot.turnStart = 0;
     this._afterTurn(slot, result);
@@ -296,8 +301,34 @@ class Room extends EventEmitter {
     try {
       const paths = ev.files && ev.files.length ? ev.files : ev.file ? [ev.file] : [];
       if (ev.kind === 'write' && paths.length) changes = this.ws.touch(paths);
-      else if (['write', 'shell', 'other'].includes(ev.kind)) changes = this.ws.sweep();
+      else if (['write', 'shell', 'other'].includes(ev.kind)) this._deferSweep(slot);
     } catch { /* never let diffing break a run */ }
+    this._record(slot, changes);
+  }
+
+  /**
+   * A shell command may have changed any file. Wait briefly before sweeping so the peer's own
+   * exact-path tool events (which land milliseconds after its write) claim their files first;
+   * otherwise a sweep here would credit the peer's edit to this agent.
+   */
+  _deferSweep(slot) {
+    if (slot.sweepTimer) return;
+    slot.sweepTimer = setTimeout(() => this._flushSweep(slot), 300);
+  }
+
+  _flushSweep(slot) {
+    if (!slot.sweepTimer) return;
+    clearTimeout(slot.sweepTimer);
+    slot.sweepTimer = null;
+    this._record(slot, this._safeSweep());
+  }
+
+  _safeSweep() {
+    try { return this.ws.sweep(); } catch { return []; }
+  }
+
+  /** Attribute file changes to an agent: stats, conflict detection, UI event. */
+  _record(slot, changes) {
     if (!changes.length) return;
     const id = slot.agent.id;
     for (const c of changes) {
@@ -364,7 +395,10 @@ class Room extends EventEmitter {
   dispose() {
     this.stopped = true;
     clearTimeout(this._statsTimer);
-    for (const s of this.slots.values()) if (s.agent.running) s.agent.interrupt();
+    for (const s of this.slots.values()) {
+      clearTimeout(s.sweepTimer);
+      if (s.agent.running) s.agent.interrupt();
+    }
   }
 }
 

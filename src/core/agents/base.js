@@ -106,6 +106,7 @@ class Agent extends EventEmitter {
         cwd: this.cwd,
         env: childEnv(spec.env),
         windowsHide: true,
+        shell: !!spec.shell,
         stdio: ['pipe', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
       });

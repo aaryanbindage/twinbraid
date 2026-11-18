@@ -12,7 +12,7 @@ const SANDBOX = { workspace: 'workspace-write', careful: 'read-only', full: 'dan
 class CodexAgent extends Agent {
   constructor(opts) {
     super({ ...opts, kind: 'codex' });
-    this.bin = resolveCodex(opts.binPath);
+    this.bin = opts.bin || resolveCodex(opts.binPath);
     this.threadId = null;
     this.system = opts.system || '';
   }
@@ -26,7 +26,7 @@ class CodexAgent extends Agent {
     else args.push(...cfg, '--json', '--skip-git-repo-check', '-C', this.cwd, '-');
     // Codex has no system-prompt flag, so the protocol rides along on turn 1.
     const text = first && this.system ? `${this.system}\n\n${prompt}` : prompt;
-    return { command: this.bin.command, args, stdin: text };
+    return { command: this.bin.command, args, stdin: text, env: this.bin.env };
   }
 
   handleLine(o) {

@@ -12,7 +12,7 @@ const PERMISSION = {
 class ClaudeAgent extends Agent {
   constructor(opts) {
     super({ ...opts, kind: 'claude' });
-    this.bin = resolveClaude(opts.binPath);
+    this.bin = opts.bin || resolveClaude(opts.binPath);
     this.system = opts.system || '';
     this.blocks = new Map(); // content block index -> { type, id, json }
     this.msgOut = 0;
