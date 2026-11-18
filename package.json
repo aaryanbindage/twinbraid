@@ -1,0 +1,19 @@
+﻿{
+  "name": "duet",
+  "version": "0.1.0",
+  "description": "Two coding agents (Claude Code + Codex) collaborating live in one workspace, with a desktop app to watch, interrupt and broadcast.",
+  "main": "src/main/main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "demo": "electron . --demo",
+    "cli": "node src/cli.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "devDependencies": {
+    "electron": "^45.3.4"
+  },
+  "dependencies": {
+    "@openai/codex": "^0.170.0"
+  }
+}

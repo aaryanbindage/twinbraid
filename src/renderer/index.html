@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duet</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand"><span class="logo"><i></i><i></i></span><b>Duet</b></div>
+    <div id="sessionTitle" class="session-title"></div>
+    <div id="totals" class="totals hidden"></div>
+    <div class="top-actions" id="topActions"></div>
+  </header>
+
+  <main id="setup" class="view">
+    <div class="setup-card">
+      <h1>Two agents. One workspace.</h1>
+      <p class="lede">Claude Code and Codex share your project folder and message each other directly, so work is handed off, never rewritten. Watch both think, interrupt either, or broadcast to both.</p>
+
+      <div class="doctor" id="doctor"></div>
+
+      <label class="field">
+        <span>Project folder</span>
+        <div class="row"><input id="cwd" placeholder="C:\path\to\project" spellcheck="false"><button class="btn" id="browse">Browse…</button></div>
+        <div class="recent" id="recent"></div>
+      </label>
+
+      <label class="field">
+        <span>Task</span>
+        <textarea id="task" rows="4" placeholder="Describe what you want built. Both agents see this, and the lead splits the work."></textarea>
+      </label>
+
+      <div class="grid2">
+        <div class="field">
+          <span>Who leads</span>
+          <div class="seg" id="lead">
+            <button data-v="claude" class="on">Claude leads</button>
+            <button data-v="codex">Codex leads</button>
+            <button data-v="none">Equal peers</button>
+          </div>
+        </div>
+        <div class="field">
+          <span>Permissions</span>
+          <div class="seg" id="perm">
+            <button data-v="workspace" class="on" title="Edits and shell allowed inside the project (Codex sandboxed to the workspace)">Workspace</button>
+            <button data-v="careful" title="Claude edits files but cannot run shell; Codex is read-only">Careful</button>
+            <button data-v="full" class="danger" title="No sandbox, no prompts. Only for throwaway folders.">Full auto</button>
+          </div>
+        </div>
+      </div>
+
+      <details class="adv">
+        <summary>Advanced</summary>
+        <div class="grid3">
+          <label class="field"><span>Claude model</span><input id="mClaude" placeholder="default (e.g. sonnet, opus)"></label>
+          <label class="field"><span>Codex model</span><input id="mCodex" placeholder="default"></label>
+          <label class="field"><span>Pause after N agent-to-agent messages</span><input id="maxEx" type="number" min="2" max="100" value="14"></label>
+        </div>
+      </details>
+
+      <div class="err" id="setupErr"></div>
+      <div class="row end">
+        <button class="btn ghost" id="demoBtn" title="Two scripted agents in a temp folder. No logins needed.">Try the demo</button>
+        <button class="btn primary" id="startBtn">Start collaborating</button>
+      </div>
+    </div>
+  </main>
+
+  <main id="stage" class="view hidden">
+    <section class="pane" id="paneL"></section>
+    <section class="center">
+      <div id="banner" class="banner"></div>
+      <div id="chat" class="chat"></div>
+      <form id="composer" class="composer">
+        <div class="composer-top">
+          <div class="seg small" id="target"></div>
+          <label class="toggle" title="Stop whatever the target is doing right now and deliver this immediately"><input type="checkbox" id="interrupt"><span>⚡ Interrupt now</span></label>
+          <span class="hint" id="composeHint"></span>
+        </div>
+        <div class="composer-row">
+          <textarea id="msg" rows="2" placeholder="Message the agents…  Enter to send, Shift+Enter for a new line"></textarea>
+          <button class="btn primary send" type="submit">Send</button>
+        </div>
+      </form>
+    </section>
+    <section class="pane" id="paneR"></section>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
