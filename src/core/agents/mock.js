@@ -137,7 +137,7 @@ class MockAgent extends Agent {
       if (this.turnNo === 1) {
         await this.think('I am the implementer. First turn is read-only orientation: skim the repo, do not edit, then wait for the lead\'s plan.', 90);
         await this.tool('Glob', { pattern: '**/*' }, null, 400);
-        this.setFinal('Oriented, nothing to flag. [[wait]]');
+        this.setFinal('Oriented, nothing to flag. [[silent]]');
       } else if (this.turnNo === 2) {
         await this.think('The lead owns the parser and wants render.js plus tests. I must not touch src/parser.js. Starting with the renderer.', 200);
         await this.tool('Write', { file_path: path.join(this.cwd, 'src/render.js') }, this.write('src/render.js', RENDER), 1100);

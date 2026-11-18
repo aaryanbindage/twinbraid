@@ -233,7 +233,7 @@ class Room extends EventEmitter {
         this.exchanges++;
         this._emitInbox(peerSlot);
       }
-    } else if (r.wait || !r.body) {
+    } else if (r.silent) {
       if (r.body) this.chat(me.id, null, r.body, { kind: 'note' });
     } else {
       this.chat(me.id, peer, r.body, { kind: 'agent' });

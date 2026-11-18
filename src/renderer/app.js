@@ -31,7 +31,7 @@
     change: svg('<path d="M12 5v14M5 12h14"/>'),
   };
 
-  const TAGS = /\[\[\s*(?:done|wait|ask[-_ ]?user)\s*\]\]/gi;
+  const TAGS = /\[\[\s*(?:done|wait|silent|ask[-_ ]?user)\s*\]\]/gi;
 
   // ---- formatting ----------------------------------------------------------
   const fmtNum = (n) => (n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'k' : n.toLocaleString('en-US'));
@@ -80,7 +80,7 @@
     });
     api.invoke('doctor').then((d) => {
       const chips = [];
-      chips.push(d.claude.found ? chip('ok', `Claude Code ${d.claude.version || ''}`) : chip('bad', 'Claude Code not found'));
+      chips.push(d.claude.found ? chip('ok', `Claude Code ${(d.claude.version || '').replace(/\s*\(Claude Code\)/, '')}`) : chip('bad', 'Claude Code not found'));
       if (!d.codex.found) chips.push(chip('bad', 'Codex CLI not found'));
       else chips.push(d.codex.loggedIn ? chip('ok', `Codex ${d.codex.version || ''}`) : chip('warn', 'Codex not signed in — run: codex login'));
       S.doctor = d;

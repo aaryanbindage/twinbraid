@@ -6,28 +6,33 @@
  * thing that travels between them is a short message at the end of a turn.
  */
 
+// A message is forwarded to the peer unless it is explicitly [[silent]] or empty.
+// Suppressing by mistake deadlocks the pair; forwarding by mistake costs one short
+// turn, so models' loose use of tags (e.g. "[[wait]]" meaning "I'm waiting on you")
+// must never swallow a message. [[wait]] is therefore parsed and stripped only.
 const TAGS = {
-  done: /\[\[\s*done\s*\]\]/i,
-  wait: /\[\[\s*wait\s*\]\]/i,
-  ask: /\[\[\s*ask[-_ ]?user\s*\]\]/i,
+  done: /\[\[\s*done\s*\]\]/gi,
+  silent: /\[\[\s*silent\s*\]\]/gi,
+  wait: /\[\[\s*wait\s*\]\]/gi,
+  ask: /\[\[\s*ask[-_ ]?user\s*\]\]/gi,
 };
+const has = (re, s) => { re.lastIndex = 0; return re.test(s); };
 
 function stripTags(text) {
-  return text
-    .replace(TAGS.done, '')
-    .replace(TAGS.wait, '')
-    .replace(TAGS.ask, '')
-    .trim();
+  let out = text;
+  for (const re of Object.values(TAGS)) out = out.replace(re, '');
+  return out.trim();
 }
 
 /** Classify the final message of a turn. */
 function parseTurnEnd(text) {
   const raw = (text || '').trim();
+  const body = stripTags(raw);
   return {
-    done: TAGS.done.test(raw),
-    wait: TAGS.wait.test(raw),
-    ask: TAGS.ask.test(raw),
-    body: stripTags(raw),
+    done: has(TAGS.done, raw),
+    silent: has(TAGS.silent, raw) || !body,
+    ask: has(TAGS.ask, raw),
+    body,
   };
 }
 
@@ -39,8 +44,9 @@ You and ${peer} share this exact directory. Whatever either of you writes to dis
 
 How collaboration works
 - The final message of each of your turns is delivered to ${peer} automatically. Keep it short and concrete (under ~150 words): what you changed (file paths), what you need from ${peer}, any decision or risk.
-- Tag rules, put the tag anywhere in your final message:
-  [[wait]]      you have nothing for ${peer} right now; you will sleep until someone writes to you
+- Your final message is ALWAYS forwarded to ${peer}, so if you want something from ${peer} (a plan, a review, a file), just write it. Do not wait for permission and do not tell them to wait.
+- Tags, placed anywhere in your final message:
+  [[silent]]    use ONLY when you have nothing to tell ${peer}; the message is then not forwarded and you sleep until someone writes to you
   [[done]]      you believe the overall task is complete (give a one-line summary). If ${peer} agrees, the session ends
   [[ask-user]]  you need a decision only the human can make; put the question in the message
 - Split work so you do not edit the same files at once. Before editing a file ${peer} owns or recently touched, re-read it first. If you must touch their file, say so in your message.
@@ -56,7 +62,7 @@ const ROLES = {
   lead: (peer) =>
     `Lead. Skim the repo, then send ${peer} a short plan that splits the work into disjoint files/areas (who owns what), take your own part, and review ${peer}'s work when they report back. You make the call when you disagree.`,
   worker: (peer) =>
-    `Implementer. On your first turn only orient yourself read-only (do not edit anything yet) and finish with [[wait]] unless you spot a serious problem. When ${peer} sends the plan, take your assigned part and build it. Ask ${peer} when the plan is ambiguous.`,
+    `Implementer. On your first turn only orient yourself read-only (do not edit anything yet) and finish with just [[silent]] unless you spot a serious problem. When ${peer} sends the plan, take your assigned part and build it. Ask ${peer} when the plan is ambiguous.`,
   peer: (peer) =>
     `Equal peer. Propose a split to ${peer} in your first message and take whichever half they do not claim.`,
 };

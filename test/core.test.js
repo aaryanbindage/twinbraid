@@ -19,10 +19,19 @@ const until = async (fn, ms = 8000) => {
 };
 
 test('protocol tags are parsed and stripped', () => {
-  assert.deepStrictEqual(parseTurnEnd('All good [[done]]'), { done: true, wait: false, ask: false, body: 'All good' });
+  assert.deepStrictEqual(parseTurnEnd('All good [[done]]'), { done: true, silent: false, ask: false, body: 'All good' });
   assert.strictEqual(parseTurnEnd('hm [[Ask-User]] which db?').ask, true);
-  assert.strictEqual(parseTurnEnd('[[wait]]').body, '');
+  assert.strictEqual(parseTurnEnd('[[silent]]').silent, true);
   assert.strictEqual(parseTurnEnd('plain message').done, false);
+  // repeated calls must not be poisoned by regex state
+  assert.strictEqual(parseTurnEnd('x [[done]]').done && parseTurnEnd('y [[done]]').done, true);
+});
+
+test('a stray [[wait]] never swallows a message (deadlock regression)', () => {
+  const r = parseTurnEnd('Codex, please write add.test.js next. [[wait]]');
+  assert.strictEqual(r.silent, false);
+  assert.strictEqual(r.body, 'Codex, please write add.test.js next.');
+  assert.strictEqual(parseTurnEnd('[[wait]]').silent, true, 'empty after stripping is still silent');
 });
 
 test('classifyTool gives size hints for edits', () => {
