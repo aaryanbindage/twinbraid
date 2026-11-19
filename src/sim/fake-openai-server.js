@@ -27,6 +27,12 @@ function plan(messages, delayScale) {
   const redirect = turnNo > 1 && /\[from user\]\s*([^\n]*)/.exec(userText);
 
   if (/SIM_NOTOOLS/.test(userText)) return { error: { status: 400, body: { error: { message: 'registry.ollama.ai/library/tiny does not support tools' } } } };
+  // a model that announces work instead of doing it; only the harness nudge gets it to act
+  if (messages.some((m) => m.role === 'user' && /SIM_NARRATE/.test(m.content))) {
+    if (/^\[harness\]/.test(userText) && toolsThisTurn === 0) return tool('Write', { file_path: 'note.txt', content: 'hello\n' });
+    if (toolsThisTurn > 0) return { text: 'note.txt written.' };
+    return { text: "I understand. Let's write the file now." };
+  }
   if (redirect) return { think: `The supervisor said "${redirect[1]}", so I should adapt.`, text: `Understood: ${redirect[1]}.` };
 
   if (role === 'lead') {

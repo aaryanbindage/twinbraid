@@ -123,7 +123,7 @@ Adding another agent means one adapter: subclass `Agent`, implement `buildComman
 
 - Verified against **real Claude Code** sessions (two-agent collaboration, resume, interrupt/redirect, usage and line stats).
 - The **Codex adapter has only been run against the simulator**, which implements the documented `codex exec --json` protocol; it has not yet met a live signed-in Codex.
-- The **local-model loop** is tested against the simulated server, not yet against a real Ollama/LM Studio model. Models differ a lot in tool-calling quality.
+- The **local-model loop** is tested against the simulated server and live against **Ollama `qwen2.5-coder` 7B paired with Claude Haiku** (they finished a small module with passing tests). Small models are weak partners: that 7B model often printed tool calls as text, pasted files into chat instead of writing them, or claimed "done" without checking. Twinbraid recovers text tool calls, nudges the model to act, and ignores a "done" from an agent that has read or run nothing, but a bigger model (or a stronger peer, as here) gives much better results. LM Studio and llama.cpp are untested live.
 - **Gemini / Aider / OpenCode presets** are written from their documented non-interactive modes and have not been run against the real tools. Plain-text CLIs report no tokens or tool calls; lines changed are inferred from the filesystem (best effort while the peer is also writing).
 - **macOS:** the code paths are covered by tests on a macOS CI runner and the app is smoke-launched there, but it has not been hands-on tested on a Mac. The build is unsigned.
 - Claude's thinking text is often summarized or hidden by the model; the panel then shows a live thinking-token estimate. Cost is shown for Claude (API-equivalent) only.

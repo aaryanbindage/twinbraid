@@ -149,3 +149,44 @@ test('interrupting a local model aborts the stream and the next turn works', asy
   assert.strictEqual(a.running, false);
   await sim.close();
 });
+
+test('extractTextToolCalls: recovers tool calls a small model printed as text', () => {
+  const { extractTextToolCalls } = require('../src/core/agents/openai');
+  const names = new Set(['Write', 'Bash']);
+  const text = 'Sure, writing it.\n\n```json\n{"name": "Write", "arguments": {"file_path": "a.js", "content": "x = {\\"k\\": 1}\\n}"}}\n```\nthen <tool_call>{"name":"Bash","arguments":"{\\"command\\":\\"node a.js\\"}"}</tool_call>';
+  const r = extractTextToolCalls(text, names);
+  assert.deepEqual(r.calls.map((c) => c.name), ['Write', 'Bash']);
+  assert.equal(r.calls[0].arguments.content, 'x = {"k": 1}\n}');
+  assert.equal(r.calls[1].arguments.command, 'node a.js');
+  assert.ok(!r.text.includes('"name"'));
+  // unknown tools and ordinary JSON are left alone
+  assert.equal(extractTextToolCalls('{"name":"Rm","arguments":{}} and {"a":1}', names).calls.length, 0);
+});
+
+test('promisesAction spots announced-but-undone work, not results', () => {
+  const { promisesAction } = require('../src/core/agents/openai');
+  assert.equal(promisesAction("I understand. Let's write the test file now."), true);
+  assert.equal(promisesAction('The test failed.\n\nI will update the test.\n\n[[silent]]'), true);
+  assert.equal(promisesAction('All 6 tests pass. Over to you.'), false);
+  assert.equal(promisesAction("Now I'll hand over. [[done]]"), false);
+  assert.equal(promisesAction(''), false);
+});
+
+test('local model that narrates instead of acting is nudged into calling the tool', async () => {
+  const sim = await startFakeOpenAI({ speed: 0.01 });
+  const cwd = tmp();
+  const a = new OpenAIAgent({ id: 'x', kind: 'ollama', label: 'X', cwd, model: 'sim', baseUrl: sim.url, system: 'sys' });
+  const r = await a.runTurn('SIM_NARRATE please write note.txt');
+  assert.ok(r.ok);
+  assert.equal(fs.readFileSync(path.join(cwd, 'note.txt'), 'utf8'), 'hello\n');
+  assert.match(a._final, /note\.txt written/);
+  await sim.close();
+});
+
+test('hasCodeBlock flags pasted files but not short snippets', () => {
+  const { hasCodeBlock } = require('../src/core/agents/openai');
+  const big = 'slugify.test.js\n\n```javascript\n' + "const test = require('node:test');\n".repeat(4);
+  assert.equal(hasCodeBlock(big), true, 'even an unclosed fence counts');
+  assert.equal(hasCodeBlock('use `x` here, or:\n```\nls\n```'), false);
+  assert.equal(hasCodeBlock('plain text'), false);
+});

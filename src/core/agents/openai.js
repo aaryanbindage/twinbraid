@@ -87,11 +87,31 @@ class OpenAIAgent extends Agent {
     this.emitEv({ t: 'status', state: 'thinking', label: 'Starting…' });
     this.messages.push({ role: 'user', content: prompt });
 
+    let nudges = 0;
+    let usedTools = false;
     try {
       for (let step = 1; step <= this.maxSteps; step++) {
         const msg = await this._step();
         this.messages.push(msg);
-        if (!msg.tool_calls || !msg.tool_calls.length) { this.setFinal(msg.content || ''); break; }
+        if (!msg.tool_calls || !msg.tool_calls.length) {
+          // small models often announce the next action ("Let's write the test now") or paste a file as
+          // markdown instead of calling Write, and end the turn with nothing done
+          const pasted = !usedTools && hasCodeBlock(msg.content);
+          if (nudges < 2 && (pasted || promisesAction(msg.content))) {
+            nudges++;
+            this.messages.push({
+              role: 'user',
+              content: pasted
+                ? '[harness] Your reply contains code but you did not call a tool, so nothing was saved. Call the Write tool to create the file (and Bash to run it), then report briefly.'
+                : '[harness] You described an action but did not call a tool. Call the tool now. If you are truly finished, say so plainly instead.',
+            });
+            this.emitEv({ t: 'status', state: 'thinking', label: 'Nudging model to act…' });
+            continue;
+          }
+          this.setFinal(msg.content || '');
+          break;
+        }
+        usedTools = true;
         for (const call of msg.tool_calls) {
           if (this._interrupted) throw new Error('aborted');
           await this._exec(call);
@@ -225,6 +245,16 @@ class OpenAIAgent extends Agent {
       msg.tool_calls = [...calls.values()].filter((c) => c.name).map((c) => ({
         id: c.id, type: 'function', function: { name: c.name, arguments: c.args || '{}' },
       }));
+    } else {
+      // small local models often print the call as JSON text instead of using the tool API
+      const names = new Set(this.tools.definitions().map((d) => d.function.name));
+      const found = extractTextToolCalls(content, names);
+      if (found.calls.length) {
+        msg.content = found.text;
+        msg.tool_calls = found.calls.map((c, i) => ({
+          id: `txt_${this.turns}_${Date.now()}_${i}`, type: 'function', function: { name: c.name, arguments: JSON.stringify(c.arguments) },
+        }));
+      }
     }
     return msg;
   }
@@ -245,4 +275,56 @@ class OpenAIAgent extends Agent {
   }
 }
 
-module.exports = { OpenAIAgent, ThinkSplitter };
+/** A fenced code block of real size (closed or cut off), i.e. a file pasted into chat. */
+function hasCodeBlock(text) {
+  return /```[\w.+-]*\n[\s\S]{60,}/.test(String(text || ''));
+}
+
+/** True when the final sentence promises an action instead of reporting a result. */
+function promisesAction(text) {
+  const t = String(text || '').replace(/\[\[[^\]]*\]\]/g, ' ').trim();
+  if (!t || /\[\[\s*(done|ask)/i.test(String(text))) return false;
+  const last = t.split(/(?<=[.!?:])\s+/).filter(Boolean).slice(-2).join(' ');
+  return /\b(let'?s|let me|i will|i'll|i am going to|i'm going to|next,? i|now,? i|going to)\b/i.test(last);
+}
+
+/**
+ * Find `{"name": "Write", "arguments": {...}}` objects printed in plain text (bare, in ``` fences or
+ * <tool_call> tags). Only names the toolbox knows count. Returns the text with those objects removed.
+ */
+function extractTextToolCalls(text, names) {
+  const calls = [];
+  const cuts = [];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== '{') continue;
+    let depth = 0, inStr = false, esc = false, end = -1;
+    for (let j = i; j < text.length; j++) {
+      const c = text[j];
+      if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') inStr = false; continue; }
+      if (c === '"') inStr = true;
+      else if (c === '{') depth++;
+      else if (c === '}' && --depth === 0) { end = j; break; }
+    }
+    if (end < 0) continue;
+    try {
+      const o = JSON.parse(text.slice(i, end + 1));
+      const name = o.name || (o.function && o.function.name);
+      let args = o.arguments !== undefined ? o.arguments : o.parameters !== undefined ? o.parameters : o.function && o.function.arguments;
+      if (typeof args === 'string') { try { args = JSON.parse(args); } catch { args = null; } }
+      if (names.has(name) && args && typeof args === 'object') {
+        calls.push({ name, arguments: args });
+        cuts.push([i, end + 1]);
+        i = end;
+      }
+    } catch { /* not JSON, keep scanning */ }
+  }
+  if (!calls.length) return { calls, text };
+  let out = '';
+  let at = 0;
+  for (const [s, e] of cuts) { out += text.slice(at, s); at = e; }
+  out += text.slice(at);
+  out = out.replace(/```(?:json)?\s*```/g, '').replace(/<\/?tool_call>/g, '').trim();
+  return { calls, text: out };
+}
+
+module.exports = { OpenAIAgent, ThinkSplitter, extractTextToolCalls, promisesAction, hasCodeBlock };

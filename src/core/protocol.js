@@ -16,11 +16,26 @@ const TAGS = {
   wait: /\[\[\s*wait\s*\]\]/gi,
   ask: /\[\[\s*ask[-_ ]?user\s*\]\]/gi,
 };
-const has = (re, s) => { re.lastIndex = 0; return re.test(s); };
+
+// Models mention tags in prose ("no [[ask-user]] needed", `[[done]]`), which must not trigger them.
+// A tag is a mention, not a command, when it is quoted or directly follows a word like no/not/use/the.
+const MENTION = /(?:\b(?:no|not|never|without|don'?t|do|nor|use|using|the|a|any|tag|tags|write|writing|mention|mentioning)\s+|[`'"])$/i;
+function liveSpans(re, s) {
+  const spans = [];
+  re.lastIndex = 0;
+  for (let m = re.exec(s); m; m = re.exec(s)) {
+    if (!MENTION.test(s.slice(Math.max(0, m.index - 30), m.index))) spans.push([m.index, m.index + m[0].length]);
+  }
+  return spans;
+}
+const SILENT_MAX = 80;
+const has = (re, s) => liveSpans(re, s).length > 0;
 
 function stripTags(text) {
   let out = text;
-  for (const re of Object.values(TAGS)) out = out.replace(re, '');
+  for (const re of Object.values(TAGS)) {
+    for (const [a, b] of liveSpans(re, out).reverse()) out = out.slice(0, a) + out.slice(b);
+  }
   return out.trim();
 }
 
@@ -30,7 +45,8 @@ function parseTurnEnd(text) {
   const body = stripTags(raw);
   return {
     done: has(TAGS.done, raw),
-    silent: has(TAGS.silent, raw) || !body,
+    // [[silent]] on a message with real content (a handoff, a request) is a model slip: forward it
+    silent: !body || (has(TAGS.silent, raw) && body.length < SILENT_MAX),
     ask: has(TAGS.ask, raw),
     body,
   };
@@ -45,7 +61,7 @@ You and ${peer} share this exact directory. Whatever either of you writes to dis
 How collaboration works
 - The final message of each of your turns is delivered to ${peer} automatically. Keep it short and concrete (under ~150 words): what you changed (file paths), what you need from ${peer}, any decision or risk.
 - Your final message is ALWAYS forwarded to ${peer}, so if you want something from ${peer} (a plan, a review, a file), just write it. Do not wait for permission and do not tell them to wait.
-- Tags, placed anywhere in your final message:
+- Tags go on their own line at the very end of your final message. Never write a tag name in ordinary prose or code; it would trigger it:
   [[silent]]    use ONLY when you have nothing to tell ${peer}; the message is then not forwarded and you sleep until someone writes to you
   [[done]]      you believe the overall task is complete (give a one-line summary). If ${peer} agrees, the session ends
   [[ask-user]]  you need a decision only the human can make; put the question in the message

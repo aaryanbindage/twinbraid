@@ -186,3 +186,25 @@ test('exchange limit pauses the room until the human speaks', async () => {
   assert.ok(events.some((e) => e.t === 'chat' && e.kind === 'system' && /Paused after 1/.test(e.text)));
   room.dispose();
 });
+
+test('protocol: tags mentioned mid-sentence are not triggered, tags on their own line are', () => {
+  const { parseTurnEnd } = require('../src/core/protocol');
+  const talk = parseTurnEnd('No [[ask-user]] needed here. Ollama, your part: write the test.');
+  assert.equal(talk.ask, false);
+  assert.ok(talk.body.includes('[[ask-user]]') && talk.body.includes('Ollama, your part'));
+  const live = parseTurnEnd('All green, summary above.\n[[done]]');
+  assert.equal(live.done, true);
+  assert.equal(live.body, 'All green, summary above.');
+  assert.equal(parseTurnEnd('[[silent]]').silent, true);
+  assert.equal(parseTurnEnd('Need a call from you. [[ask-user]]').ask, true);
+  assert.equal(parseTurnEnd('Use `[[done]]` when finished').done, false);
+});
+
+test('protocol: [[silent]] on a substantive message is forwarded, on a short note it is not', () => {
+  const { parseTurnEnd } = require('../src/core/protocol');
+  assert.equal(parseTurnEnd('Oriented, nothing to flag. [[silent]]').silent, true);
+  const handoff = 'I wrote slugify.js. Ollama, please write slugify.test.js with node:test and run it, then report the counts back to me.\n[[silent]]';
+  const r = parseTurnEnd(handoff);
+  assert.equal(r.silent, false);
+  assert.ok(r.body.startsWith('I wrote slugify.js') && !r.body.includes('[['));
+});

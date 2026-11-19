@@ -229,6 +229,12 @@ class Room extends EventEmitter {
       slot.asking = true;
       this.chat(me.id, 'user', r.body || '(needs your input)', { kind: 'ask' });
       this._emit({ t: 'attention', agent: me.id, text: r.body });
+    } else if (r.done && !me.noToolEvents && slot.tools === 0 && (slot.rubberStamps || 0) < 2) {
+      // agreeing to "done" without reading or running anything is a rubber stamp (weak local models do this)
+      slot.rubberStamps = (slot.rubberStamps || 0) + 1;
+      this.chat('system', me.id, `${me.label} said it was done without reading or running anything. Asked it to check the files and run the tests first.`, { kind: 'system' });
+      slot.inbox.push({ from: 'system', text: 'You said the task is done, but you have not read a file or run a command this session. Check what is actually on disk (list and read the files), run the tests, do any part of the work that is yours and still missing, then report what you verified.' });
+      this._emitInbox(slot);
     } else if (r.done) {
       slot.done = true;
       this.chat(me.id, peer, r.body || 'Done.', { kind: 'done' });
