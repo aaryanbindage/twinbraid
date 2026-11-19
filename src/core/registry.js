@@ -9,7 +9,7 @@ const { MockAgent } = require('./agents/mock');
 const SIM_CODEX = path.join(__dirname, '..', 'sim', 'fake-codex.js');
 
 /**
- * Every agent kind Duet can run. `fields` tells the UI which inputs to show.
+ * Every agent kind Twinbraid can run. `fields` tells the UI which inputs to show.
  * Any two kinds can be paired, including two of the same kind.
  */
 const KINDS = {

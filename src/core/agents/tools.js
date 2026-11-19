@@ -4,7 +4,7 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { killTree, childEnv } = require('../proc');
 
-const SKIP = new Set(['.git', 'node_modules', '.duet', 'dist', 'build', '.next', '.venv', '__pycache__', 'target', 'out']);
+const SKIP = new Set(['.git', 'node_modules', '.twinbraid', 'dist', 'build', '.next', '.venv', '__pycache__', 'target', 'out']);
 const MAX_OUT = 14000;
 
 const clip = (s, n = MAX_OUT) => (s.length > n ? `${s.slice(0, n * 0.6)}\n…[${s.length - n} chars omitted]…\n${s.slice(-n * 0.4)}` : s);

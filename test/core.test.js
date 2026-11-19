@@ -11,7 +11,7 @@ const { ClaudeAgent } = require('../src/core/agents/claude');
 const { CodexAgent } = require('../src/core/agents/codex');
 const { classifyTool } = require('../src/core/agents/base');
 
-const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'duet-'));
+const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'twinbraid-'));
 const until = async (fn, ms = 8000) => {
   const end = Date.now() + ms;
   while (Date.now() < end) { if (fn()) return; await new Promise((r) => setTimeout(r, 15)); }

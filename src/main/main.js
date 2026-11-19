@@ -11,7 +11,7 @@ const { resolveClaude, resolveCodex, resolveBin, childEnv, fixPath, isMac } = re
 // Finder/Dock launches get a minimal PATH; adopt the login shell's so `claude`, `codex`, `ollama` resolve
 fixPath();
 
-const DATA = path.join(os.homedir(), '.duet');
+const DATA = path.join(os.homedir(), '.twinbraid');
 const SETTINGS = path.join(DATA, 'settings.json');
 const DEMO_FLAG = process.argv.includes('--demo');
 
@@ -37,7 +37,7 @@ function createWindow() {
     minWidth: 1040,
     minHeight: 640,
     backgroundColor: '#1a1917',
-    title: 'Duet',
+    title: 'Twinbraid',
     // macOS keeps its traffic lights inset; Windows gets a themed caption-button overlay
     ...(isMac
       ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 14 } }
@@ -82,7 +82,7 @@ function attach(r) {
 function notify(ev) {
   if (!win || win.isFocused() || !Notification.isSupported()) return;
   const n = new Notification({
-    title: ev.t === 'attention' ? `${ev.agent} needs you` : 'Duet: task complete',
+    title: ev.t === 'attention' ? `${ev.agent} needs you` : 'Twinbraid: task complete',
     body: ev.t === 'attention' ? (ev.text || '').slice(0, 160) : 'Both agents agree the work is done.',
   });
   n.on('click', () => { if (win) { win.show(); win.focus(); } });
@@ -152,7 +152,7 @@ ipcMain.handle('start', (_e, cfg) => {
     teardown();
     const demo = !!cfg.demo;
     const sandbox = demo || (cfg.agents || []).every((a) => ['codex-sim', 'local-sim', 'mock'].includes(a.kind));
-    if (sandbox && !cfg.cwd) cfg.cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'duet-demo-'));
+    if (sandbox && !cfg.cwd) cfg.cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'twinbraid-demo-'));
     if (!cfg.cwd || !fs.existsSync(cfg.cwd)) return { ok: false, error: 'Pick an existing project folder.' };
     if (!cfg.task || !cfg.task.trim()) return { ok: false, error: 'Describe the task first.' };
     room = buildRoom({ ...cfg, speed: demo ? 1 : undefined });

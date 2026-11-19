@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const api = window.duet;
+  const api = window.twinbraid;
   const $ = (s, r = document) => r.querySelector(s);
   const el = (tag, attrs = {}, ...kids) => {
     const n = document.createElement(tag);
@@ -72,7 +72,7 @@
     seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === val));
   };
   const segVal = (segId) => $(`${segId} button.on`).dataset.v;
-  const saved = (() => { try { return JSON.parse(localStorage.getItem('duet.setup') || '{}'); } catch { return {}; } })();
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('twinbraid.setup') || '{}'); } catch { return {}; } })();
 
   const GROUPS = [
     ['Coding agents', ['claude', 'codex']],
@@ -237,7 +237,7 @@
     agents.forEach((a, i) => { if (keys[i]) a.apiKey = keys[i]; });
     try {
       const keep = S.cards.map(cardValue);
-      localStorage.setItem('duet.setup', JSON.stringify({ cwd: cfg.cwd, lead: cfg.lead, perm: cfg.permission, agents: keep }));
+      localStorage.setItem('twinbraid.setup', JSON.stringify({ cwd: cfg.cwd, lead: cfg.lead, perm: cfg.permission, agents: keep }));
     } catch { /* ignore */ }
     const r = await api.invoke('start', cfg);
     if (!r.ok) fail(r.error);

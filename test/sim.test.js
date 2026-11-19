@@ -12,7 +12,7 @@ const { start: startFakeOpenAI } = require('../src/sim/fake-openai-server');
 process.env.FAKE_CODEX_SPEED = '0.02';
 process.env.FAKE_CLI_SPEED = '0.02';
 
-const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'duet-sim-'));
+const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'twinbraid-sim-'));
 const until = async (fn, ms = 20000) => {
   const end = Date.now() + ms;
   while (Date.now() < end) { if (fn()) return; await new Promise((r) => setTimeout(r, 20)); }

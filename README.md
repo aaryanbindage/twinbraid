@@ -1,18 +1,18 @@
-# Duet
+# Twinbraid
 
 Pair **any two coding agents** in one workspace: Claude Code, Codex, a **local model** (Ollama, LM Studio, llama.cpp), Gemini CLI, Aider, or any OpenAI-compatible API. They share your project folder and message each other directly, so you never start something in one tool, ship it to another, and have it rewritten.
 
 A desktop app (Windows and macOS) shows both working side by side: what each is thinking, what it is editing, tokens used, lines added and removed, and the conversation between them. Interrupt either one, or broadcast to both, at any time.
 
-![Duet running two agents](assets/screenshot.png)
+![Twinbraid running two agents](assets/screenshot.png)
 
 ## Why it doesn't rewrite your code
 
-Handoff between tools usually means pasting context into a fresh session that re-derives everything. Duet avoids that:
+Handoff between tools usually means pasting context into a fresh session that re-derives everything. Twinbraid avoids that:
 
 - Both agents run in **the same directory**. Whatever one writes is already there for the other. A handoff is a two-line message ("I own `src/parser.js`, it's done; please build the renderer and tests"), never a code dump.
 - Each agent keeps its own **resumable session** across turns, so it remembers what it did.
-- A small **protocol** lets the lead split the work into disjoint files. If both touch a file anyway, Duet warns the earlier owner.
+- A small **protocol** lets the lead split the work into disjoint files. If both touch a file anyway, Twinbraid warns the earlier owner.
 
 ## What you see
 
@@ -27,17 +27,17 @@ Lines changed are measured by diffing the filesystem after each tool call, so th
 
 ## Install
 
-Download from [Releases](https://github.com/aaryanbindage/duet/releases):
+Download from [Releases](https://github.com/aaryanbindage/twinbraid/releases):
 
 | Platform | File |
 |---|---|
-| Windows | `Duet-Setup-x.y.z.exe` (installer) or `Duet-x.y.z-win-portable.zip` |
-| macOS (Apple Silicon) | `Duet-x.y.z-mac-arm64.dmg` |
-| macOS (Intel) | `Duet-x.y.z-mac-x64.dmg` |
+| Windows | `Twinbraid-Setup-x.y.z.exe` (installer) or `Twinbraid-x.y.z-win-portable.zip` |
+| macOS (Apple Silicon) | `Twinbraid-x.y.z-mac-arm64.dmg` |
+| macOS (Intel) | `Twinbraid-x.y.z-mac-x64.dmg` |
 
-**macOS:** the app is not signed or notarized yet. The first time, right-click Duet → **Open**, or run `xattr -dr com.apple.quarantine /Applications/Duet.app`.
+**macOS:** the app is not signed or notarized yet. The first time, right-click Twinbraid → **Open**, or run `xattr -dr com.apple.quarantine /Applications/Twinbraid.app`.
 
-Duet drives the agent CLIs you already have, so install and sign into whichever you want to use:
+Twinbraid drives the agent CLIs you already have, so install and sign into whichever you want to use:
 
 - Claude Code: <https://claude.com/claude-code>
 - Codex: `npm i -g @openai/codex`, then `codex login`
@@ -46,7 +46,7 @@ Duet drives the agent CLIs you already have, so install and sign into whichever 
 ### From source
 
 ```bash
-git clone https://github.com/aaryanbindage/duet && cd duet
+git clone https://github.com/aaryanbindage/twinbraid && cd twinbraid
 npm install
 npm start            # desktop app
 npm run demo         # two scripted agents, no logins or models needed
@@ -67,7 +67,7 @@ npm test
 
 Two of the same kind work too (e.g. two Claude sessions with different models).
 
-**Local models get a real agent loop.** A chat endpoint can't edit files, so for `ollama`/`lmstudio`/etc. Duet runs its own tool loop (Read, Write, Edit, LS, Glob, Grep, Bash) over streaming `/chat/completions`, with reasoning shown in the thinking panel and token usage tracked. The model must support **tool calling** (e.g. `qwen2.5-coder`, `llama3.1`, `mistral-nemo`; for llama.cpp start `llama-server` with `--jinja`). Duet tells you clearly if it doesn't.
+**Local models get a real agent loop.** A chat endpoint can't edit files, so for `ollama`/`lmstudio`/etc. Twinbraid runs its own tool loop (Read, Write, Edit, LS, Glob, Grep, Bash) over streaming `/chat/completions`, with reasoning shown in the thinking panel and token usage tracked. The model must support **tool calling** (e.g. `qwen2.5-coder`, `llama3.1`, `mistral-nemo`; for llama.cpp start `llama-server` with `--jinja`). Twinbraid tells you clearly if it doesn't.
 
 ## Headless / terminal
 
@@ -78,7 +78,7 @@ node src/cli.js --a claude --b ollama:qwen2.5-coder --cwd path/to/project --task
 
 ## How the agents talk
 
-Duet runs each agent as a headless process or API session, one turn at a time, resuming the same session. The final message of a turn is routed to the peer's inbox; if the peer is mid-turn it is delivered when that turn ends. The protocol every agent is given:
+Twinbraid runs each agent as a headless process or API session, one turn at a time, resuming the same session. The final message of a turn is routed to the peer's inbox; if the peer is mid-turn it is delivered when that turn ends. The protocol every agent is given:
 
 - Your final message is always forwarded to the peer. Keep it short; say which files you touched.
 - `[[silent]]`: nothing to say, don't forward. `[[done]]`: I think the task is complete (the session ends when both agree). `[[ask-user]]`: I need a human decision.
@@ -98,7 +98,7 @@ Headless agents can't answer permission prompts, so these presets decide up fron
 
 ## Simulators
 
-You don't need paid accounts or a GPU to try or test Duet:
+You don't need paid accounts or a GPU to try or test Twinbraid:
 
 - `src/sim/fake-codex.js` speaks the real `codex exec --json` protocol (events, resume, usage, failures) and writes real files, so the actual Codex adapter is exercised end to end.
 - `src/sim/fake-openai-server.js` is an OpenAI-compatible streaming server with tool calls, reasoning deltas, `<think>` tags and a usage chunk; run it standalone with `node src/sim/fake-openai-server.js --port 11500`.
@@ -127,6 +127,6 @@ Adding another agent means one adapter: subclass `Agent`, implement `buildComman
 - **Gemini / Aider / OpenCode presets** are written from their documented non-interactive modes and have not been run against the real tools. Plain-text CLIs report no tokens or tool calls; lines changed are inferred from the filesystem (best effort while the peer is also writing).
 - **macOS:** the code paths are covered by tests on a macOS CI runner and the app is smoke-launched there, but it has not been hands-on tested on a Mac. The build is unsigned.
 - Claude's thinking text is often summarized or hidden by the model; the panel then shows a live thinking-token estimate. Cost is shown for Claude (API-equivalent) only.
-- Sessions are logged to `~/.duet/sessions/` (JSONL, without token-by-token deltas).
+- Sessions are logged to `~/.twinbraid/sessions/` (JSONL, without token-by-token deltas).
 
 MIT licensed.

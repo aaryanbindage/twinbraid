@@ -34,7 +34,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - uses: actions/upload-artifact@v4
         with:
-          name: duet-${{ matrix.name }}
+          name: twinbraid-${{ matrix.name }}
           if-no-files-found: error
           path: |
             dist/*.exe
@@ -57,5 +57,5 @@ jobs:
           ls -la artifacts
           gh release create "$GITHUB_REF_NAME" artifacts/* \
             --repo "$GITHUB_REPOSITORY" \
-            --title "Duet $GITHUB_REF_NAME" \
+            --title "Twinbraid $GITHUB_REF_NAME" \
             --generate-notes

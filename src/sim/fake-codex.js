@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Simulated `codex` CLI. Speaks the same surface Duet uses:
+ * Simulated `codex` CLI. Speaks the same surface Twinbraid uses:
  *   codex --version | codex login status
  *   codex exec [resume <thread>] [-c k=v ...] --json --skip-git-repo-check [-C dir] -   (prompt on stdin)
  * and emits the `codex exec --json` JSONL event stream (thread.started, item.*, turn.completed),
- * performing real file writes so the rest of Duet behaves exactly as with the real thing.
+ * performing real file writes so the rest of Twinbraid behaves exactly as with the real thing.
  *
  * FAKE_CODEX_SPEED scales delays (tests use 0.02). A prompt containing SIM_FAIL makes the turn fail.
  */
@@ -37,7 +37,7 @@ function resumeId() {
 const threadId = (resumeIdx >= 0 && resumeId()) || `sim-${crypto.randomUUID()}`;
 const cdIdx = argv.indexOf('-C');
 const cwd = cdIdx >= 0 ? argv[cdIdx + 1] : process.cwd();
-const stateFile = path.join(os.tmpdir(), `duet-fakecodex-${threadId}.json`);
+const stateFile = path.join(os.tmpdir(), `twinbraid-fakecodex-${threadId}.json`);
 
 let item = 0;
 const id = () => `item_${item++}`;

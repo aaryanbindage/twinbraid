@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Headless Duet: same engine as the desktop app, rendered as a terminal log.
+ * Headless Twinbraid: same engine as the desktop app, rendered as a terminal log.
  *   node src/cli.js --cwd . --task "add a /health endpoint with tests"
  * While running, type:  text = broadcast   @claude text = one agent   !claude text = interrupt + send
  *                       /stop = stop all   /resume claude   /quit
@@ -15,7 +15,7 @@ const flag = (n) => argv.includes(`--${n}`);
 const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 && argv[i + 1] ? argv[i + 1] : d; };
 
 if (flag('help') || (!opt('task') && !flag('demo'))) {
-  console.log(`Usage: duet-cli --task "<what to build>" [--cwd DIR] [--a KIND[:MODEL]] [--b KIND[:MODEL]]
+  console.log(`Usage: twinbraid-cli --task "<what to build>" [--cwd DIR] [--a KIND[:MODEL]] [--b KIND[:MODEL]]
                 [--lead a|b|none] [--perm workspace|careful|full] [--max N] [--url BASE_URL]
                 [--thinking] [--demo]
 
@@ -30,7 +30,7 @@ const paint = (id, s) => `${C[id] || ''}${s}${C.off}`;
 const clip = (s, n = 110) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
 const demo = flag('demo');
-const cwd = demo ? require('node:fs').mkdtempSync(path.join(require('node:os').tmpdir(), 'duet-demo-')) : path.resolve(opt('cwd', '.'));
+const cwd = demo ? require('node:fs').mkdtempSync(path.join(require('node:os').tmpdir(), 'twinbraid-demo-')) : path.resolve(opt('cwd', '.'));
 const task = opt('task', 'Build a small markdown-to-HTML converter with tests.');
 // --a / --b take  kind[:model]  e.g. claude, codex, ollama:qwen2.5-coder, lmstudio, gemini, codex-sim
 const agentSpec = (v) => {

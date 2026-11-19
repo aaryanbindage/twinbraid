@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const IGNORE = new Set(['.git', 'node_modules', '.duet', 'dist', 'build', '.next', '.venv', '__pycache__', 'target', '.cache', 'out']);
+const IGNORE = new Set(['.git', 'node_modules', '.twinbraid', 'dist', 'build', '.next', '.venv', '__pycache__', 'target', '.cache', 'out']);
 const MAX_FILE = 512 * 1024;
 const MAX_FILES = 4000;
 
