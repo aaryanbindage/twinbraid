@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Twinbraid: run two coding agents together on one project</title>
+<meta name="description" content="Twinbraid is a free desktop app (Windows and macOS) that puts two coding agents, such as Claude Code, Codex, Ollama or LM Studio models, in one project folder. Watch both think, interrupt either, broadcast to both.">
+<link rel="canonical" href="https://aaryanbindage.github.io/twinbraid/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Twinbraid: run two coding agents together on one project">
+<meta property="og:description" content="Pair Claude Code, Codex, local models and more in one workspace. See what each is thinking and editing, interrupt either, broadcast to both.">
+<meta property="og:url" content="https://aaryanbindage.github.io/twinbraid/">
+<meta property="og:image" content="https://aaryanbindage.github.io/twinbraid/screenshot.png">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Twinbraid",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Windows, macOS",
+  "description": "Desktop app that runs two coding agents (Claude Code, Codex, Ollama, LM Studio, Gemini CLI, Aider) together in one project folder.",
+  "url": "https://aaryanbindage.github.io/twinbraid/",
+  "downloadUrl": "https://github.com/aaryanbindage/twinbraid/releases/latest",
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Aaryan Bindage", "url": "https://github.com/aaryanbindage" }
+}
+</script>
+<style>
+:root{--bg:#faf9f5;--panel:#fff;--ink:#1f1e1c;--muted:#6b665d;--line:#e4e0d6;--accent:#d97757;--accent-ink:#fff;--code:#f1efe8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1917;--panel:#23211f;--ink:#ece8de;--muted:#a09a8d;--line:#35322e;--accent:#e08662;--accent-ink:#1a1917;--code:#2a2825}}
+:root[data-theme="dark"]{--bg:#1a1917;--panel:#23211f;--ink:#ece8de;--muted:#a09a8d;--line:#35322e;--accent:#e08662;--accent-ink:#1a1917;--code:#2a2825}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:0 16px 64px}
+a{color:var(--accent)}
+.hero{padding:64px 0 32px;text-align:center}
+h1{font-size:clamp(2.2rem,6vw,3.4rem);line-height:1.1;margin:0 0 12px;letter-spacing:-.02em}
+.lede{font-size:1.2rem;color:var(--muted);max-width:640px;margin:0 auto 28px}
+.btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.btn{display:inline-block;padding:10px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);text-decoration:none;font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.shot{display:block;width:100%;height:auto;margin:32px 0;border-radius:14px;border:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:24px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card h3{margin:0 0 6px;font-size:1.05rem}
+.card p{margin:0;color:var(--muted)}
+h2{font-size:1.6rem;margin:48px 0 12px}
+pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font-size:.9rem}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+ul.agents{columns:2;padding-left:20px;color:var(--muted)}
+.note{color:var(--muted);font-size:.95rem}
+footer{border-top:1px solid var(--line);margin-top:48px;padding-top:20px;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <h1>Two coding agents.<br>One project. Both visible.</h1>
+    <p class="lede">Twinbraid puts Claude Code, Codex, a local model, or any two agents in the same folder. They message each other, you watch both think, and you can interrupt either one.</p>
+    <div class="btns">
+      <a class="btn primary" href="https://github.com/aaryanbindage/twinbraid/releases/latest">Download for Windows or macOS</a>
+      <a class="btn" href="https://github.com/aaryanbindage/twinbraid">View on GitHub</a>
+    </div>
+    <p class="note">Free and open source (MIT). Builds for Windows, macOS Apple Silicon and Intel.</p>
+  </section>
+
+  <img class="shot" src="screenshot.png" alt="Twinbraid window showing two agents side by side with their thinking, activity, tokens and the shared chat between them" width="1520" height="940">
+
+  <div class="grid">
+    <div class="card"><h3>See both at once</h3><p>What each agent is thinking and editing, tokens used, lines added and removed, and every tool call, instead of a pulsing logo.</p></div>
+    <div class="card"><h3>They talk, not you</h3><p>Agents share one folder and send each other short messages. A handoff is two lines, never a code dump, so nothing gets rewritten.</p></div>
+    <div class="card"><h3>You stay in charge</h3><p>Interrupt one agent, redirect it, or broadcast to both. A message cap stops them chatting forever on your tokens.</p></div>
+  </div>
+
+  <h2>Works with the agents you have</h2>
+  <ul class="agents">
+    <li>Claude Code</li><li>OpenAI Codex CLI</li><li>Ollama</li><li>LM Studio</li>
+    <li>llama.cpp</li><li>OpenAI and OpenRouter APIs</li><li>Gemini CLI</li><li>Aider and OpenCode</li>
+    <li>Any OpenAI-compatible server</li><li>Any CLI that reads a prompt on stdin</li>
+  </ul>
+  <p class="note">Pick any two, including two of the same kind. Local models get their own tool loop (read, write, edit, search, shell) so they can edit files like the others.</p>
+
+  <h2>Install</h2>
+<pre><code># macOS
+brew install --cask aaryanbindage/twinbraid/twinbraid
+
+# Windows
+scoop bucket add twinbraid https://github.com/aaryanbindage/scoop-twinbraid
+scoop install twinbraid</code></pre>
+  <p class="note">Or grab the installer from the <a href="https://github.com/aaryanbindage/twinbraid/releases/latest">latest release</a>. The app is not signed yet, so macOS needs right-click, Open on first launch.</p>
+
+  <h2>Try it without any accounts</h2>
+<pre><code>git clone https://github.com/aaryanbindage/twinbraid &amp;&amp; cd twinbraid
+npm install
+npm run demo:sim</code></pre>
+  <p class="note">Runs a simulated Codex and a simulated local model through the real engine. See the <a href="https://github.com/aaryanbindage/twinbraid#status-and-limits">README</a> for what has and hasn't been tested against real tools.</p>
+
+  <footer>Twinbraid by <a href="https://github.com/aaryanbindage">Aaryan Bindage</a>. MIT licensed.</footer>
+</main>
+</body>
+</html>

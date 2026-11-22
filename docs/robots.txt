@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://aaryanbindage.github.io/twinbraid/sitemap.xml
