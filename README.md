@@ -39,6 +39,7 @@ Or with a package manager:
 
 ```bash
 # macOS (Homebrew)
+brew trust --cask aaryanbindage/twinbraid/twinbraid   # newer Homebrew requires trusting third-party casks
 brew install --cask aaryanbindage/twinbraid/twinbraid
 
 # Windows (Scoop)
