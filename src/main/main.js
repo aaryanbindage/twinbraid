@@ -152,7 +152,10 @@ ipcMain.handle('start', (_e, cfg) => {
     teardown();
     const demo = !!cfg.demo;
     const sandbox = demo || (cfg.agents || []).every((a) => ['codex-sim', 'local-sim', 'mock'].includes(a.kind));
-    if (sandbox && !cfg.cwd) cfg.cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'twinbraid-demo-'));
+    if (sandbox && !cfg.cwd) {
+      cfg.cwd = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'twinbraid-demo-')), 'markdown-converter');
+      fs.mkdirSync(cfg.cwd);
+    }
     if (!cfg.cwd || !fs.existsSync(cfg.cwd)) return { ok: false, error: 'Pick an existing project folder.' };
     if (!cfg.task || !cfg.task.trim()) return { ok: false, error: 'Describe the task first.' };
     room = buildRoom({ ...cfg, speed: demo ? 1 : undefined });
@@ -191,9 +194,11 @@ app.whenReady().then(() => {
   const shot = argVal('shot');
   if (shot) {
     win.webContents.once('did-finish-load', () => setTimeout(async () => {
-      const img = await win.webContents.capturePage();
-      fs.writeFileSync(shot, img.toPNG());
-      app.quit();
+      // capturePage intermittently fails (UnknownVizError) on some GPUs; retry, then always exit
+      for (let i = 0; i < 6; i++) {
+        try { fs.writeFileSync(shot, (await win.webContents.capturePage()).toPNG()); break; } catch { await new Promise((r) => setTimeout(r, 400)); }
+      }
+      app.exit(0);
     }, Number(argVal('shot-delay')) || 6000));
   }
 });

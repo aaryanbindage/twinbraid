@@ -3,15 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Twinbraid: run two coding agents together on one project</title>
-<meta name="description" content="Twinbraid is a free desktop app (Windows and macOS) that puts two coding agents, such as Claude Code, Codex, Ollama or LM Studio models, in one project folder. Watch both think, interrupt either, broadcast to both.">
+<title>Twinbraid: two coding agents, one project, both in view</title>
+<meta name="description" content="Twinbraid is a free desktop app for Windows and macOS that runs two coding agents, such as Claude Code, Codex, Ollama or LM Studio models, in the same project folder. Watch both work, interrupt either, or message both.">
 <link rel="canonical" href="https://aaryanbindage.github.io/twinbraid/">
+<meta name="theme-color" content="#faf9f5">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Twinbraid: run two coding agents together on one project">
-<meta property="og:description" content="Pair Claude Code, Codex, local models and more in one workspace. See what each is thinking and editing, interrupt either, broadcast to both.">
+<meta property="og:title" content="Twinbraid: two coding agents, one project, both in view">
+<meta property="og:description" content="Run Claude Code, Codex, local models and more in one workspace. See what each is thinking and editing, interrupt either, message both.">
 <meta property="og:url" content="https://aaryanbindage.github.io/twinbraid/">
-<meta property="og:image" content="https://aaryanbindage.github.io/twinbraid/screenshot.png">
+<meta property="og:image" content="https://aaryanbindage.github.io/twinbraid/img/mid.png">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -28,77 +30,333 @@
 }
 </script>
 <style>
-:root{--bg:#faf9f5;--panel:#fff;--ink:#1f1e1c;--muted:#6b665d;--line:#e4e0d6;--accent:#d97757;--accent-ink:#fff;--code:#f1efe8}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1917;--panel:#23211f;--ink:#ece8de;--muted:#a09a8d;--line:#35322e;--accent:#e08662;--accent-ink:#1a1917;--code:#2a2825}}
-:root[data-theme="dark"]{--bg:#1a1917;--panel:#23211f;--ink:#ece8de;--muted:#a09a8d;--line:#35322e;--accent:#e08662;--accent-ink:#1a1917;--code:#2a2825}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:980px;margin:0 auto;padding:0 16px 64px}
-a{color:var(--accent)}
-.hero{padding:64px 0 32px;text-align:center}
-h1{font-size:clamp(2.2rem,6vw,3.4rem);line-height:1.1;margin:0 0 12px;letter-spacing:-.02em}
-.lede{font-size:1.2rem;color:var(--muted);max-width:640px;margin:0 auto 28px}
-.btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
-.btn{display:inline-block;padding:10px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);text-decoration:none;font-weight:600}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.shot{display:block;width:100%;height:auto;margin:32px 0;border-radius:14px;border:1px solid var(--line)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:24px 0}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
-.card h3{margin:0 0 6px;font-size:1.05rem}
-.card p{margin:0;color:var(--muted)}
-h2{font-size:1.6rem;margin:48px 0 12px}
-pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font-size:.9rem}
-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-ul.agents{columns:2;padding-left:20px;color:var(--muted)}
-.note{color:var(--muted);font-size:.95rem}
-footer{border-top:1px solid var(--line);margin-top:48px;padding-top:20px;color:var(--muted);font-size:.9rem}
+:root {
+  --bg: #faf9f5; --surface: #ffffff; --ink: #141413; --muted: #5e5d59; --faint: #87867f;
+  --line: #e8e6dc; --code: #f0eee6; --accent: #c6613f; --accent-ink: #ffffff;
+  --shadow: 0 1px 2px rgba(20,20,19,.05), 0 12px 40px -12px rgba(20,20,19,.22);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1917; --surface: #23211f; --ink: #ece8de; --muted: #a8a295; --faint: #7d786d;
+    --line: #35322e; --code: #2a2825; --accent: #e08662; --accent-ink: #1a1917;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 40px -12px rgba(0,0,0,.7);
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.65 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.narrow { max-width: 680px; }
+
+/* header */
+header { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+header .wrap { display: flex; align-items: center; gap: 28px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 600 18px/1 var(--serif); text-decoration: none; letter-spacing: -.01em; }
+.brand svg { width: 28px; height: 20px; }
+nav { display: flex; gap: 24px; margin-left: auto; font-size: 15px; color: var(--muted); }
+nav a { text-decoration: none; }
+nav a:hover { color: var(--ink); }
+@media (max-width: 640px) { nav a:not(.gh) { display: none; } }
+
+/* hero */
+.hero { padding-top: 88px; padding-bottom: 56px; }
+h1 { font: 500 clamp(2.4rem, 5.4vw, 3.9rem)/1.06 var(--serif); letter-spacing: -.025em; margin: 0 0 24px; max-width: 17em; text-wrap: balance; }
+.lede { font-size: clamp(1.1rem, 2vw, 1.3rem); line-height: 1.55; color: var(--muted); max-width: 40em; margin: 0 0 36px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); text-decoration: none; font-weight: 600; font-size: 16px; cursor: pointer; color: var(--ink); }
+.btn:hover { border-color: var(--faint); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.06); }
+.meta { margin: 18px 0 0; font-size: 14px; color: var(--faint); }
+.meta a { color: var(--muted); }
+
+.shot { margin: 56px 0 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: #1a1917; }
+.shot img { display: block; width: 100%; height: auto; }
+
+/* sections */
+section { padding: 96px 0 0; }
+.kicker { font: 600 13px/1 var(--sans); color: var(--accent); letter-spacing: .02em; margin: 0 0 14px; }
+h2 { font: 500 clamp(1.8rem, 3.6vw, 2.5rem)/1.12 var(--serif); letter-spacing: -.02em; margin: 0 0 18px; }
+p { margin: 0 0 16px; }
+.muted { color: var(--muted); }
+
+.feature { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 64px; align-items: center; padding: 72px 0 0; }
+.feature.flip { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
+.feature.flip .copy { order: 2; }
+.feature h3 { font: 500 1.7rem/1.2 var(--serif); letter-spacing: -.015em; margin: 0 0 14px; }
+.feature ul { padding: 0; margin: 18px 0 0; list-style: none; border-top: 1px solid var(--line); }
+.feature li { padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 15.5px; color: var(--muted); }
+.feature li b { color: var(--ink); font-weight: 600; }
+.crop { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--line); box-shadow: var(--shadow); background: #1a1917; }
+.crop img { position: absolute; max-width: none; height: auto; }
+@media (max-width: 860px) {
+  .feature, .feature.flip { grid-template-columns: 1fr; gap: 28px; padding-top: 56px; }
+  .feature.flip .copy { order: 0; }
+  .hero { padding-top: 56px; }
+}
+
+/* agents */
+.agents { margin-top: 36px; border-top: 1px solid var(--line); }
+.agents div { display: grid; grid-template-columns: 200px 1fr auto; gap: 24px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.agents dt { font-weight: 600; }
+.agents dd { margin: 0; color: var(--muted); font-size: 15.5px; }
+.agents .tag { font: 500 12.5px/1 var(--sans); color: var(--muted); border: 1px solid var(--line); padding: 5px 9px; border-radius: 999px; white-space: nowrap; }
+.agents .tag.ok { color: #2f7d54; border-color: color-mix(in srgb, #2f7d54 40%, var(--line)); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .agents .tag.ok { color: #74c69d; } }
+@media (max-width: 700px) { .agents div { grid-template-columns: 1fr; gap: 6px; } }
+
+/* steps */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 36px; counter-reset: s; }
+.steps div { counter-increment: s; border-top: 1px solid var(--ink); padding-top: 16px; }
+.steps div::before { content: "0" counter(s); font: 500 14px/1 var(--mono); color: var(--faint); display: block; margin-bottom: 14px; }
+.steps h3 { font: 500 1.25rem/1.25 var(--serif); margin: 0 0 8px; }
+.steps p { color: var(--muted); font-size: 15.5px; margin: 0; }
+@media (max-width: 800px) { .steps { grid-template-columns: 1fr; gap: 28px; } }
+
+/* install */
+.install { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 32px; }
+.box { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
+.box h3 { margin: 0 0 4px; font: 600 15px/1.4 var(--sans); }
+.box p { font-size: 14.5px; color: var(--muted); margin: 0 0 12px; }
+pre { position: relative; margin: 0; background: var(--code); border-radius: 8px; padding: 13px 54px 13px 14px; overflow-x: auto; font: 13.5px/1.6 var(--mono); }
+pre button { position: absolute; top: 8px; right: 8px; font: 500 12px/1 var(--sans); padding: 6px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+pre button:hover { color: var(--ink); }
+@media (max-width: 760px) { .install { grid-template-columns: 1fr; } }
+.note { font-size: 14.5px; color: var(--muted); margin-top: 22px; }
+
+/* status table */
+table { width: 100%; border-collapse: collapse; margin-top: 28px; font-size: 15.5px; }
+th, td { text-align: left; padding: 12px 16px 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; width: 220px; }
+td { color: var(--muted); }
+thead th { font-size: 13px; color: var(--faint); font-weight: 600; }
+
+footer { margin-top: 112px; border-top: 1px solid var(--line); padding: 32px 0 56px; color: var(--faint); font-size: 14.5px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; }
+footer a { color: var(--muted); }
+footer .r { margin-left: auto; }
 </style>
 </head>
 <body>
-<main>
-  <section class="hero">
-    <h1>Two coding agents.<br>One project. Both visible.</h1>
-    <p class="lede">Twinbraid puts Claude Code, Codex, a local model, or any two agents in the same folder. They message each other, you watch both think, and you can interrupt either one.</p>
-    <div class="btns">
-      <a class="btn primary" href="https://github.com/aaryanbindage/twinbraid/releases/latest">Download for Windows or macOS</a>
-      <a class="btn" href="https://github.com/aaryanbindage/twinbraid">View on GitHub</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Twinbraid">
+      <svg viewBox="0 0 28 20" aria-hidden="true"><circle cx="9" cy="10" r="8" fill="#da7756"/><circle cx="19" cy="10" r="8" fill="#3fb6a0" style="mix-blend-mode:multiply" opacity=".92"/></svg>
+      Twinbraid
+    </a>
+    <nav>
+      <a href="#what">What you see</a>
+      <a href="#agents">Agents</a>
+      <a href="#install">Install</a>
+      <a href="#status">Status</a>
+      <a class="gh" href="https://github.com/aaryanbindage/twinbraid">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap hero">
+    <h1>Two coding agents. One project. Both in view.</h1>
+    <p class="lede">Twinbraid runs Claude Code, Codex, a local model, or any two agents in the same folder. They message each other directly, so work is handed off instead of rewritten, and you can watch both think, step in, or speak to either.</p>
+    <div class="actions">
+      <a class="btn primary" id="dl" href="https://github.com/aaryanbindage/twinbraid/releases/latest">Download</a>
+      <a class="btn" href="https://github.com/aaryanbindage/twinbraid">View source</a>
     </div>
-    <p class="note">Free and open source (MIT). Builds for Windows, macOS Apple Silicon and Intel.</p>
-  </section>
-
-  <img class="shot" src="screenshot.png" alt="Twinbraid window showing two agents side by side with their thinking, activity, tokens and the shared chat between them" width="1520" height="940">
-
-  <div class="grid">
-    <div class="card"><h3>See both at once</h3><p>What each agent is thinking and editing, tokens used, lines added and removed, and every tool call, instead of a pulsing logo.</p></div>
-    <div class="card"><h3>They talk, not you</h3><p>Agents share one folder and send each other short messages. A handoff is two lines, never a code dump, so nothing gets rewritten.</p></div>
-    <div class="card"><h3>You stay in charge</h3><p>Interrupt one agent, redirect it, or broadcast to both. A message cap stops them chatting forever on your tokens.</p></div>
+    <p class="meta" id="dlmeta">Free and open source (MIT) · Windows and macOS · <a href="https://github.com/aaryanbindage/twinbraid/releases/latest">all downloads</a></p>
+    <div class="shot"><img src="img/mid.png" width="2558" height="1392" alt="Twinbraid with Claude on the left and Codex on the right. Each panel shows its current action, token and line counts, thinking and activity; the shared conversation between the two agents is in the middle." fetchpriority="high"></div>
   </div>
 
-  <h2>Works with the agents you have</h2>
-  <ul class="agents">
-    <li>Claude Code</li><li>OpenAI Codex CLI</li><li>Ollama</li><li>LM Studio</li>
-    <li>llama.cpp</li><li>OpenAI and OpenRouter APIs</li><li>Gemini CLI</li><li>Aider and OpenCode</li>
-    <li>Any OpenAI-compatible server</li><li>Any CLI that reads a prompt on stdin</li>
-  </ul>
-  <p class="note">Pick any two, including two of the same kind. Local models get their own tool loop (read, write, edit, search, shell) so they can edit files like the others.</p>
+  <div class="wrap" id="what">
+    <section>
+      <p class="kicker">What you see</p>
+      <h2>Not a pulsing logo. The actual work.</h2>
+      <p class="lede" style="margin:0">Most agent UIs show one assistant and a spinner. Twinbraid gives each agent its own panel, so you can tell who is doing what while it happens.</p>
 
-  <h2>Install</h2>
-<pre><code># macOS
-brew trust --cask aaryanbindage/twinbraid/twinbraid   # newer Homebrew requires trusting third-party casks
-brew install --cask aaryanbindage/twinbraid/twinbraid
+      <div class="feature">
+        <div class="copy">
+          <h3>Each agent, in detail</h3>
+          <p class="muted">The panel follows one agent from the first thought to the last tool call, so "Claude is adding 300 lines to the parser while Codex reworks windowing" is something you read, not guess.</p>
+          <ul>
+            <li><b>Now</b> shows the current action, such as "Running node --test".</li>
+            <li><b>Tokens</b> split into input, output, cache and reasoning, with cost where it is known.</li>
+            <li><b>Lines</b> added and removed, measured by diffing the folder, so the numbers match whatever tool made the edit.</li>
+            <li><b>Thinking</b> streams as it happens, and every tool call gets a check or a cross.</li>
+          </ul>
+        </div>
+        <div class="crop" style="aspect-ratio: 812 / 1304"><img src="img/mid.png" alt="One agent's panel: current action, six counters, thinking text, an activity list with tool calls, and per-agent interrupt and message buttons" style="width: 315%; left: 0; top: -6.75%"></div>
+      </div>
 
-# Windows
-scoop bucket add twinbraid https://github.com/aaryanbindage/scoop-twinbraid
-scoop install twinbraid</code></pre>
-  <p class="note">Or grab the installer from the <a href="https://github.com/aaryanbindage/twinbraid/releases/latest">latest release</a>. The app is not signed yet, so macOS needs right-click, Open on first launch.</p>
+      <div class="feature flip">
+        <div class="crop" style="aspect-ratio: 932 / 1010"><img src="img/end.png" alt="The shared conversation: the plan from one agent, the reply from the other, and both marking the task done" style="width: 274.5%; left: -87.3%; top: -8.9%"></div>
+        <div class="copy">
+          <h3>They talk to each other, not through you</h3>
+          <p class="muted">Both agents work in the same folder, so a handoff is two lines and a file name, never a pasted block of code. You read the whole exchange as it happens.</p>
+          <ul>
+            <li>The lead splits the work <b>by file</b>, and the other agent reads the project before touching anything.</li>
+            <li><b>Conflict warnings</b> appear when both agents edit the same file.</li>
+            <li>A session ends when <b>both agree</b> it is done, and an agent that has read or run nothing cannot sign off.</li>
+          </ul>
+        </div>
+      </div>
 
-  <h2>Try it without any accounts</h2>
-<pre><code>git clone https://github.com/aaryanbindage/twinbraid &amp;&amp; cd twinbraid
-npm install
-npm run demo:sim</code></pre>
-  <p class="note">Runs a simulated Codex and a simulated local model through the real engine. See the <a href="https://github.com/aaryanbindage/twinbraid#status-and-limits">README</a> for what has and hasn't been tested against real tools.</p>
+      <div class="feature">
+        <div class="copy">
+          <h3>Step in whenever you like</h3>
+          <p class="muted">Send a message to one agent or to both. Normally it is delivered at the end of the current turn; switch on interrupt and it cuts in right now, and the agent picks up where you point it.</p>
+          <ul>
+            <li><b>Interrupt now</b> stops the current turn and resumes the same session with your message.</li>
+            <li><b>Hold and resume</b> per agent, and <b>Stop all</b> for the whole session.</li>
+            <li>A cap on agent-to-agent messages (14 by default) stops them chatting on your tokens.</li>
+          </ul>
+        </div>
+        <div class="crop" style="aspect-ratio: 932 / 292"><img src="img/mid.png" alt="Message box with Both, Claude and Codex targets, an Interrupt now switch, and a note that the message will be delivered at the end of the current turn" style="width: 274.5%; left: -87.3%; top: -377%"></div>
+      </div>
+    </section>
+  </div>
 
-  <footer>Twinbraid by <a href="https://github.com/aaryanbindage">Aaryan Bindage</a>. MIT licensed.</footer>
+  <div class="wrap" id="agents">
+    <section>
+      <p class="kicker">Agents</p>
+      <h2>Pick any two.</h2>
+      <p class="lede" style="margin:0">Two of the same kind work too, for example two Claude sessions on different models. Local models get their own tool loop, so they can read, write and run commands like the others.</p>
+      <dl class="agents">
+        <div><dt>Claude Code</dt><dd>Runs through the Claude Code CLI, using the plan you already have.</dd><span class="tag ok">Tested live</span></div>
+        <div><dt>Ollama</dt><dd>Any tool-capable model. Tested with qwen2.5-coder 7B alongside Claude, which needed Twinbraid's recovery for small models.</dd><span class="tag ok">Tested live</span></div>
+        <div><dt>Codex</dt><dd>Through the Codex CLI. Needs a signed-in Codex.</dd><span class="tag">Simulator only</span></div>
+        <div><dt>LM Studio, llama.cpp</dt><dd>Any OpenAI-compatible local server.</dd><span class="tag">Simulator only</span></div>
+        <div><dt>OpenAI, OpenRouter</dt><dd>Cloud APIs. Keys come from the environment or are typed per run, never saved.</dd><span class="tag">Simulator only</span></div>
+        <div><dt>Gemini CLI, Aider, OpenCode</dt><dd>Plain-text CLIs. Lines changed are inferred from the folder.</dd><span class="tag">Untested</span></div>
+        <div><dt>Any command</dt><dd>Anything that reads a prompt on stdin and writes files.</dd><span class="tag">Untested</span></div>
+      </dl>
+    </section>
+  </div>
+
+  <div class="wrap">
+    <section>
+      <div class="feature" style="padding-top:0">
+        <div class="copy">
+          <p class="kicker">Getting started</p>
+          <h2>Three fields and a task.</h2>
+          <p class="muted">Pick a folder, describe the work, choose the two agents and who leads. Twinbraid checks what is installed and signed in, and tells you before you start rather than after a failed run.</p>
+          <p class="muted">Three permission presets decide up front what headless agents may do: workspace edits, read-only, or full access for throwaway folders.</p>
+        </div>
+        <div class="crop" style="aspect-ratio: 1520 / 640"><img src="img/setup.png" alt="The setup screen: headline, detected tools and the project folder field" style="width: 168%; left: -34.2%; top: -26.6%"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap">
+    <section>
+      <p class="kicker">How it works</p>
+      <h2>A shared folder and a short protocol.</h2>
+      <div class="steps">
+        <div><h3>One folder</h3><p>Each agent runs as a headless process or API session in your project, one turn at a time, resuming its own session so it remembers what it did.</p></div>
+        <div><h3>Short messages</h3><p>The last message of a turn goes to the other agent's inbox. Tags mark a message as silent, done, or a question for you. Forwarding is the default, so a stray tag cannot deadlock the pair.</p></div>
+        <div><h3>Measured, not claimed</h3><p>Line counts come from diffing the folder after each tool call, so they hold for any agent. File claims time out after ten minutes.</p></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap" id="install">
+    <section>
+      <p class="kicker">Install</p>
+      <h2>Windows and macOS.</h2>
+      <div class="install">
+        <div class="box">
+          <h3>macOS</h3>
+          <p>Homebrew, or the dmg from the release page.</p>
+          <pre><code>brew install --cask aaryanbindage/twinbraid/twinbraid</code><button type="button" data-copy>Copy</button></pre>
+        </div>
+        <div class="box">
+          <h3>Windows</h3>
+          <p>Scoop, or the installer from the release page.</p>
+          <pre><code>scoop bucket add twinbraid https://github.com/aaryanbindage/scoop-twinbraid
+scoop install twinbraid</code><button type="button" data-copy>Copy</button></pre>
+        </div>
+        <div class="box">
+          <h3>Try it with no accounts</h3>
+          <p>Two scripted agents through the real engine.</p>
+          <pre><code>git clone https://github.com/aaryanbindage/twinbraid
+cd twinbraid &amp;&amp; npm install
+npm run demo</code><button type="button" data-copy>Copy</button></pre>
+        </div>
+        <div class="box">
+          <h3>From the terminal</h3>
+          <p>The same engine, as a log.</p>
+          <pre><code>node src/cli.js --a claude --b ollama:qwen2.5-coder \
+  --cwd ./project --task "add a /health endpoint"</code><button type="button" data-copy>Copy</button></pre>
+        </div>
+      </div>
+      <p class="note">The builds are not signed or notarized yet. On macOS, right-click the app and choose Open the first time. On Windows, choose More info, then Run anyway at the SmartScreen prompt.</p>
+    </section>
+  </div>
+
+  <div class="wrap narrow" id="status" style="margin-left:auto;margin-right:auto;max-width:1120px">
+    <section>
+      <p class="kicker">Status</p>
+      <h2>What has and hasn't been tested.</h2>
+      <p class="lede" style="margin:0">Twinbraid is young. Here is where it stands, so you do not have to find out the hard way.</p>
+      <table>
+        <thead><tr><th>Area</th><td>State</td></tr></thead>
+        <tbody>
+          <tr><th>Claude Code</th><td>Two-agent runs, session resume, interrupt and redirect, usage and line stats, all live.</td></tr>
+          <tr><th>Local models</th><td>A 7B model on Ollama finished a small task with Claude. Small models are weak partners; a stronger peer or a larger model does much better.</td></tr>
+          <tr><th>Codex</th><td>Verified against a simulator of its documented JSON protocol, not a signed-in Codex.</td></tr>
+          <tr><th>macOS</th><td>Tests and a launch pass on a macOS CI runner. Not yet used by hand on a Mac.</td></tr>
+          <tr><th>Automated tests</th><td>27 tests, including mixed pairs of simulated agents through the full router.</td></tr>
+        </tbody>
+      </table>
+      <p class="note">If you have a signed-in Codex, a Mac, or a model that works well locally, a note in <a href="https://github.com/aaryanbindage/twinbraid/discussions/1">the discussion</a> is the most useful thing you can send.</p>
+    </section>
+  </div>
 </main>
+
+<footer>
+  <div class="wrap">
+    <span>Twinbraid is MIT licensed, by <a href="https://github.com/aaryanbindage">Aaryan Bindage</a>.</span>
+    <a href="https://github.com/aaryanbindage/twinbraid">Source</a>
+    <a href="https://github.com/aaryanbindage/twinbraid/releases">Releases</a>
+    <a href="https://github.com/aaryanbindage/twinbraid/issues">Issues</a>
+    <span class="r" id="ver"></span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var repo = 'aaryanbindage/twinbraid';
+  var ua = navigator.userAgent || '';
+  var mac = /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua);
+  var win = /Windows/i.test(ua);
+  var dl = document.getElementById('dl');
+  if (mac) dl.textContent = 'Download for macOS';
+  else if (win) dl.textContent = 'Download for Windows';
+
+  // point the button at the right file for this machine; the release page stays as the fallback
+  fetch('https://api.github.com/repos/' + repo + '/releases/latest').then(function (r) { return r.ok ? r.json() : null; }).then(function (rel) {
+    if (!rel || !rel.assets) return;
+    var want = mac ? /mac-arm64\.dmg$/ : win ? /Setup-.*\.exe$/ : null;
+    var hit = want && rel.assets.filter(function (a) { return want.test(a.name); })[0];
+    if (hit) dl.href = hit.browser_download_url;
+    var v = (rel.tag_name || '').replace(/^v/, '');
+    if (v) document.getElementById('ver').textContent = 'Version ' + v;
+    if (mac && hit) {
+      var m = document.getElementById('dlmeta');
+      m.innerHTML = 'Apple Silicon build · <a href="' + rel.html_url + '">Intel and other downloads</a>';
+    }
+  }).catch(function () {});
+
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var text = b.parentNode.querySelector('code').innerText;
+      var done = function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1400); };
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(done);
+    });
+  });
+})();
+</script>
 </body>
 </html>

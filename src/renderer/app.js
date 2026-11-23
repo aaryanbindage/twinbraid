@@ -265,7 +265,8 @@
     $('#setup').classList.add('hidden');
     $('#stage').classList.remove('hidden');
     $('#totals').classList.remove('hidden');
-    $('#sessionTitle').textContent = `${session.cwd}  ·  ${session.task.slice(0, 90)}`;
+    const folder = session.cwd.split(/[\\/]/).filter(Boolean).pop() || session.cwd;
+    $('#sessionTitle').textContent = `${folder}  ·  ${session.task.slice(0, 90)}`;
     $('#sessionTitle').title = session.task;
 
     const seg = $('#target');
