@@ -1,6 +1,6 @@
 {
   "name": "twinbraid",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Pair any two coding agents (Claude Code, Codex, local models, Gemini CLI, Aider...) in one workspace, with a desktop app to watch, interrupt and broadcast.",
   "main": "src/main/main.js",
   "author": "Aaryan Bindage",
